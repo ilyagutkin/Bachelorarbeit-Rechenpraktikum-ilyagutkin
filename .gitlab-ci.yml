@@ -28,7 +28,7 @@ pages:
     - wget http://mama.indstate.edu/users/ice/tree/src/tree-2.1.1.tgz && tar xzf tree-2.1.1.tgz && cd tree-2.1.1 && make && cd ..
     - ./tree-2.1.1/tree -H static public/static --charset utf-8 -T "Methods for Numerical Mathematics" -C -n -P '*.html' -o public/static.html
     - mkdir public/doc
-    - cd src && for f in methodsnm/*.py; do pydoc -w methodsnm.$(basename $f .py); done && pydoc -w methodsnm && cd ../.. && mv content/src/*.html public/doc
+    - cd jlcontent/src && for f in methodsnm/*.py; do pydoc -w methodsnm.$(basename $f .py); done && pydoc -w methodsnm && cd ../.. && mv jlcontent/src/*.html public/doc
     - mv public ..
     
   artifacts:
