@@ -4,3 +4,4 @@ This allows to use updated versions of the modules without having to reinstall t
 """
 import sys
 sys.path.append('../src')
+import methodsnm

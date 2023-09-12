@@ -122,3 +122,7 @@ public/
 src/*_sol.py
 src/classes.png
 src/classes.pdf
+graphics/classes.pdf
+lectures/all.py
+lectures/packages.pdf
+src/*.html
