@@ -1,0 +1,16 @@
+###########################################################################################
+# Place here the required python libraries for your project.                              #
+# You can also specify the version of libraries using '== <VERSION>' (e.g. numpy==1.21.5) #
+###########################################################################################
+
+# Your requirements
+
+numpy
+scipy
+#inheritance_explorer
+pandas
+matplotlib
+ipywidgets
+ipympl
+pytest
+#manim

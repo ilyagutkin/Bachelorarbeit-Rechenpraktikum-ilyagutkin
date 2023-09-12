@@ -1,0 +1,75 @@
+# taken from Pedro Costa Klein (p.klein@math.uni-goettingen.de)
+# see https://gitlab.gwdg.de/crc1456/livedocs/livedocs_template
+stages:
+    - test
+    - deploy
+
+pages:
+  image: "python:latest"
+  
+  stage: deploy
+  before_script:
+   - mkdir -p /opt/git-repo/content 
+   - cp -r ./* /opt/git-repo/content && mv /opt/git-repo ./git-repo   
+   - rm git-repo/content/jupyter-lite.json
+   - cp jupyter-lite.json git-repo/
+   - python -m pip install -r requirements.txt
+   - python -m pip install -r jupyterlite-requirements.txt
+
+  script:    
+    - cd git-repo 
+    - mkdir jlcontent
+    - mv content/demos jlcontent/demos 
+    - mv content/lectures jlcontent/lectures
+    - mv content/src jlcontent/src
+    - jupyter lite build --contents jlcontent --output-dir public/jl
+    - jupyter nbconvert public/jl/files/demos/*.ipynb --execute --allow-errors --to html --template classic --output-dir public/static/demos
+    - jupyter nbconvert public/jl/files/lectures/*.ipynb --execute --allow-errors --to html --template classic --output-dir public/static/lectures
+    - wget http://mama.indstate.edu/users/ice/tree/src/tree-2.1.1.tgz && tar xzf tree-2.1.1.tgz && cd tree-2.1.1 && make && cd ..
+    - ./tree-2.1.1/tree -H static public/static --charset utf-8 -T "Methods for Numerical Mathematics" -C -n -P '*.html' -o public/static.html
+    - mv public ..
+    
+  artifacts:
+    paths:
+      - public # mandatory, other folder won't work
+  only:
+    - main # the branch you want to publish
+  needs: []
+
+pytests:
+  stage: test
+  image: python:latest
+  before_script:
+   - python -m pip install -r requirements.txt
+   - python -m pip install -r jupyterlite-requirements.txt
+  script:
+    - cd tests
+    - python -m pytest *.py --junitxml=pytest_report.xml
+  when: always
+  allow_failure: true
+  artifacts:
+    when: always
+    paths:
+      - tests/pytest_report.xml
+    reports:
+      junit: tests/pytest_report.xml
+  needs: []  
+
+docker_build:
+  stage: deploy
+
+  image:
+    name: gcr.io/kaniko-project/executor:v1.9.0-debug
+    entrypoint: [""]
+     
+  script:
+    - /kaniko/executor
+      --context "${CI_PROJECT_DIR}"
+      --dockerfile "${CI_PROJECT_DIR}/Dockerfile"
+      --destination "docker.gitlab.gwdg.de/lehrenfeld/methodsnm/$CI_PROJECT_NAME:latest"
+  
+  only:
+    - main # the branch you want to publish
+  when: manual 
+  needs: []
+

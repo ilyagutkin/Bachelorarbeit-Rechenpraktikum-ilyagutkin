@@ -1,0 +1,9 @@
+##############################################################################################
+### Insert here commands to be executed immediately after building your repo in Binderhub. ###
+##############################################################################################
+
+# Remove the folders used in jupyterlite
+rm -rf gitlab-demo
+
+# Remove git related files
+rm -rf .git*

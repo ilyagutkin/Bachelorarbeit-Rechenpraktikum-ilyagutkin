@@ -1,0 +1,3 @@
+[submodule "src/methodsnm/solution"]
+	path = src/methodsnm/solution
+	url = git@gitlab.gwdg.de:lehrenfeld/methodsnm-solution.git
