@@ -4,6 +4,7 @@ from numpy import array, einsum
 from methodsnm.intrule import *
 from methodsnm.fe import *
 from numpy.linalg import det, inv
+from methodsnm.meshfct import ConstantFunction
 
 class FormIntegral(ABC):
 
@@ -22,7 +23,7 @@ class LinearFormIntegral(FormIntegral):
 
 class SourceIntegral(LinearFormIntegral):
 
-    def __init__(self, coeff):
+    def __init__(self, coeff=ConstantFunction(1)):
         self.coeff = coeff
 
     def compute_element_vector(self, fe, trafo, intrule = None):
@@ -39,7 +40,7 @@ class BilinearFormIntegral(FormIntegral):
 
 class MassIntegral(BilinearFormIntegral):
 
-    def __init__(self, coeff):
+    def __init__(self, coeff=ConstantFunction(1)):
         self.coeff = coeff
 
     def compute_element_matrix(self, fe_test, fe_trial, trafo, intrule = None):
@@ -47,7 +48,7 @@ class MassIntegral(BilinearFormIntegral):
 
 class LaplaceIntegral(BilinearFormIntegral):
 
-    def __init__(self, coeff):
+    def __init__(self, coeff=ConstantFunction(1)):
         self.coeff = coeff
 
     def compute_element_matrix(self, fe_test, fe_trial, trafo, intrule = None):

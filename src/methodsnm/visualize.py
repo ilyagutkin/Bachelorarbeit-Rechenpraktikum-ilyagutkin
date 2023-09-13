@@ -114,6 +114,12 @@ def DrawFunction1D(f, sampling = 10, mesh = None, show_mesh = False):
         plt.plot(mesh.vertices,np.zeros(len(mesh.vertices)),'|',label='vertices')    
     plt.show()
 
+def DrawShapes(fes):
+   uhs = [FEFunction(fes) for i in range(fes.ndof)]
+   for i in range(fes.ndof):
+       uhs[i].vector[i] = 1
+   DrawFunction1D(uhs)   
+
 if __name__ == "__main__":
     p1 = P1_Segment_FE()
     DrawSegmentFE(p1, sampling=10)

@@ -49,19 +49,19 @@ class GlobalFunction(MeshFunction):
 
 class FEFunction(MeshFunction):
     fes = None
-    vec = None
+    vector = None
     def __init__(self, fes, coeffs = None):
         self.mesh = fes.mesh
         self.fes = fes
-        self.vec = np.zeros(fes.ndof)
+        self.vector = np.zeros(fes.ndof)
 
     def _evaluate(self, ip, trafo):
         fe = self.fes.finite_element(trafo.elnr)
         dofs = self.fes.element_dofs(trafo.elnr)
-        return np.dot(fe.evaluate(ip), self.vec[dofs])
+        return np.dot(fe.evaluate(ip), self.vector[dofs])
 
     def _evaluate_array(self, ips, trafo):
         fe = self.fes.finite_element(trafo.elnr)
         dofs = self.fes.element_dofs(trafo.elnr)
-        return np.dot(fe.evaluate(ips), self.vec[dofs])
+        return np.dot(fe.evaluate(ips), self.vector[dofs])
 
