@@ -19,23 +19,27 @@ class IntRule1D(IntRule):
         self.interval = interval
 
 
-def evaluate_exactness_degree(rule):
+def evaluate_exactness_degree(rule, max_order=None):
     """
     Evaluates the exactness degree of the given integration rule.
 
     Parameters:
     rule (IntRule1D): The integration rule to evaluate.
+    max_order (int or None): maximum order to check for exactness degree. If None, the exactness degree is checked until it is found.
 
     Returns:
     int: The exactness degree of the integration rule.
     """
     a,b = rule.interval
-    for i in range(3*len(rule.nodes)):
+    i=0
+    while True:
         if not np.isclose(rule.integrate(lambda x: x**i), (b**(i+1)-a**(i+1))/(i+1)):
             if i == 0:
                 print("Warning: Exactness degree is below 0")
             return i-1
-    raise ValueError("Could not determine exactness degree")
+        i += 1
+        if max_order is not None and i > max_order:
+            raise ValueError("Could not determine exactness degree")
 
 class MidPointRule(IntRule1D):
     """
@@ -100,7 +104,7 @@ class NP_GaussLegendreRule(IntRule1D):
         self.interval = interval
         a,b = interval
         self.nodes = np.polynomial.legendre.leggauss(n)[0]
-        self.nodes = array([[0.5*(a+b) + 0.5*(b-a)*self.nodes]])
+        self.nodes = 0.5*(a+b) + 0.5*(b-a)*self.nodes
         self.weights = np.polynomial.legendre.leggauss(n)[1]
         self.weights = 0.5*(b-a)*self.weights
         self.exactness_degree = 2*n-1
@@ -134,28 +138,34 @@ class SP_GaussJacobiRule(IntRule1D):
         Parameters:
         n (int): The number of nodes to use for integration.
         interval (tuple): The interval to integrate over.
+        alpha, beta (float): The parameters of the Jacobi polynomial.
         """
         self.interval = interval
         a,b = interval
+        self.alpha = alpha
+        self.beta = beta
         nodes, weights = scipy.special.roots_jacobi(n,alpha,beta)
         self.nodes = 0.5*(a+b) + 0.5*(b-a)*nodes
         self.weights = 0.5*(b-a)*weights
-        self.exactness_degree = 2*n-1
+        self.exactness_degree = evaluate_exactness_degree(self)
 
 class GaussJacobiRule(IntRule1D):
     """
     Class for the Gauss-Jacobi rule for 1D numerical integration.
     """
-    def __init__(self, n, interval=(0,1)):
+    def __init__(self, n, alpha, beta,  interval=(0,1)):
         """
         Initializes the Gauss-Jacobi rule with the given interval and number of nodes.
 
         Parameters:
         n (int): The number of nodes to use for integration.
         interval (tuple): The interval to integrate over.
+        alpha, beta (float): The parameters of the Jacobi polynomial.
         """
         self.interval = interval
         a,b = interval
+        self.alpha = alpha
+        self.beta = beta
 
         raise NotImplementedError("Not implemented")                
 
