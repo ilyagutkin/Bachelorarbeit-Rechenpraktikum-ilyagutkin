@@ -119,6 +119,7 @@ dmypy.json
 _output
 public/
 
+src/methodsnm/solution
 src/*_sol.py
 src/classes.png
 src/classes.pdf
