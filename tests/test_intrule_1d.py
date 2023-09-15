@@ -27,15 +27,13 @@ def test_gausslegendre_vs_numpy(K):
     glnp = NP_GaussLegendreRule(n=K)
     gl = GaussLegendreRule(n=K)
     for k in range(2*K):
-        assert np.isclose(gl.integrate(lambda x: x**k),glnp.integrate(lambda x: x**k))
+        assert np.isclose(gl.integrate(lambda x: x**k),glnp.integrate(lambda x: x**k),rtol=1e-12)
     assert gl.exactness_degree == glnp.exactness_degree
     assert np.isclose(gl.integrate(lambda x: sin(x)),glnp.integrate(lambda x: sin(x)))
 
 @pytest.mark.parametrize("K", [1,2,3,4,5,6,7,8,9,10])
-@pytest.mark.parametrize("alpha", [0])
-@pytest.mark.parametrize("beta", [0])
-#TODO: expand the test to non-zero alpha and beta
-def test_gaussjacobi(K,alpha,beta):
-    gl = GaussJacobiRule(n=K,alpha=alpha,beta=beta)
+def test_gaussjacobi00_vs_gausslegendre(K):
+    gj00 = GaussJacobiRule(n=K,alpha=0,beta=0)
+    gl = GaussLegendreRule(n=K)
     for k in range(2*K):
-        assert np.isclose(gl.integrate(lambda x: x**k,1/(k+1)))
+        assert np.isclose(gj00.integrate(lambda x: x**k),gl.integrate(lambda x: x**k),rtol=1e-12)
