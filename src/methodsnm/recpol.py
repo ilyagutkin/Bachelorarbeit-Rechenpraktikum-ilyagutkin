@@ -45,14 +45,15 @@ class RecursivePolynomial(ABC):
         Returns:
         --------
         vals : ndarray
-            Array of shape (n+1, len(x)) containing the values of the polynomial
+            Array of shape (len(x), n+1 ) containing the values of the polynomial
             evaluated at each value of x up to degree n.
         """
-        vals = np.empty((n+1, len(x)))
+        vals = np.empty((len(x), n+1))
         d = len(self.rec_coeff)
-        vals[0:d,:] = [s(x) for s in self.starter]
+        for si, s in enumerate(self.starter):
+            vals[:,si] = s(x)
         for i in range(d, n+1):
-            vals[i,:] = sum([self.rec_coeff[j](i,x)*vals[i-d+j,:] for j in range(d)])
+            vals[:,i] = sum([self.rec_coeff[j](i,x)*vals[:,i-d+j] for j in range(d)])
         return vals
 
     def evaluate(self, x, n):
@@ -73,14 +74,15 @@ class RecursivePolynomial(ABC):
             evaluated at each value of x.
         """
         d = len(self.rec_coeff)
-        vals = np.empty((d+1, len(x)))
-        vals[0:d,:] = [s(x) for s in self.starter]
+        vals = np.empty((len(x), d+1))
+        for si, s in enumerate(self.starter):
+            vals[:,si] = s(x)
         for i in range(d, n+1):
             if i != d:
                 for j in range(d):
-                    vals[j,:] = vals[j+1,:]
-            vals[d,:] = sum([self.rec_coeff[j](i,x)*vals[j,:] for j in range(d)])
-        return vals[d,:]
+                    vals[:,j] = vals[:,j+1]
+            vals[:,d] = sum([self.rec_coeff[j](i,x)*vals[:,j] for j in range(d)])
+        return vals[:,d]
 
     def plot_all(self, x, n):
         """
@@ -95,7 +97,7 @@ class RecursivePolynomial(ABC):
         """
         vals = self.evaluate_all(x, n)
         for i in range(n+1):
-            plt.plot(x, vals[i,:], label="P_{}".format(i))
+            plt.plot(x, vals[:,i], label="P_{}".format(i))
         plt.legend()
         plt.show()
 
