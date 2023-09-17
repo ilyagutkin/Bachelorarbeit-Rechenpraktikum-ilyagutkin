@@ -4,6 +4,10 @@ from numpy import array
 from methodsnm.fe import *
 
 class FE_1D(FE):
+    """
+    Abstract base class for finite elements in 1D.
+    It implements a derivative evaluation using numerical differentiation.
+    """    
     num_diff_warned = False
 
     def __init__(self):

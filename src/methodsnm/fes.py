@@ -4,6 +4,9 @@ from numpy import array
 from methodsnm.fe_1d import *
 
 class FESpace:
+    """
+    Abstract base class for finite element spaces.
+    """
     ndof = None
     mesh = None
     def __init__(self, mesh):
