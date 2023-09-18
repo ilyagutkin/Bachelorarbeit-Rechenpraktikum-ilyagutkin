@@ -12,7 +12,7 @@ class FE_2D(FE):
     num_diff_warned = False
 
     def __init__(self):
-        self.dim = 12
+        self.dim = 2
 
     def _evaluate_id(self, ip):
         raise Exception("Not implemented - Base class should not be used")
