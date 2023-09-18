@@ -54,7 +54,7 @@ class P1_Segment_FE(FE_1D, Lagrange_FE):
     def __str__(self):
         return "P1 Segment Finite Element\n" + super().__str__()
 
-class P1Mod_Segment_FE(FE_1D, Lagrange_FE):
+class P2_Segment_FE(FE_1D):
     """
     This class represents a P1 segment finite element.
     """
@@ -66,19 +66,18 @@ class P1Mod_Segment_FE(FE_1D, Lagrange_FE):
 
     def _evaluate_id(self, ip):
         """
-        Evaluates the P1 segment finite element at the given integration point.
+        Evaluates the P2 segment finite element at the given integration point.
 
         Parameters:
         ip (numpy.ndarray): The integration point at which to evaluate the finite element.
 
         Returns:
-        numpy.ndarray: The values of the P1 segment finite element at the given integration point.
+        numpy.ndarray: The values of the P2 segment finite element at the given integration point.
         """
-        phi3 = -6*((ip[0])**2 - ip[0])
-        return array([1-ip[0], ip[0], phi3])
+        return array([1-ip[0], ip[0], 4*ip[0]*(1-ip[0])])
 
     def __str__(self):
-        return "P1 Segment Finite Element\n" + super().__str__()
+        return "P2 Segment Finite Element\n" + super().__str__()
     
 class Lagrange_Segment_FE(Lagrange_FE, FE_1D):
     """
