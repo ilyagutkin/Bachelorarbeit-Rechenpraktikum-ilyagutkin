@@ -113,8 +113,6 @@ class Lagrange_FE(FE):
     This class represents a Lagrange finite element.
     A Lagrange finite element associates the dofs with the nodes of the element.
     """
-    ndof = None
-    order = None
     nodes = None
 
     def __str__(self):
