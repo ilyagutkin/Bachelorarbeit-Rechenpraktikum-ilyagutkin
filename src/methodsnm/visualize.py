@@ -87,8 +87,8 @@ def DrawTriangleFE(fe, sampling=10):
     plt.show()
 
 def DrawMesh1D(mesh):
-    x_v = mesh.vertices
-    plt.plot(x_v,np.zeros(len(x_v)),'|',label='vertices')
+    x_v = mesh.points
+    plt.plot(x_v,np.zeros(len(x_v)),'|',label='points')
     plt.xlabel("x")
     plt.legend()
     plt.show()
@@ -104,14 +104,14 @@ def DrawFunction1D(f, sampling = 10, mesh = None, show_mesh = False):
     xy = []
     for elnr,vs in enumerate(mesh.elements()):
         trafo = mesh.trafo(elnr)
-        xl, xr = mesh.vertices[vs]
+        xl, xr = mesh.points[vs]
         xy += [[xl*(1-ip_x) + xr*ip_x] + [fi.evaluate(np.array([ip_x]),trafo) for fi in f] for ip_x in np.linspace(0,1,sampling)]
     xy = np.array(xy)
     plt.plot(xy[:,0],xy[:,1::],'-')
     plt.xlabel("x")
     #plt.legend()
     if show_mesh:
-        plt.plot(mesh.vertices,np.zeros(len(mesh.vertices)),'|',label='vertices')    
+        plt.plot(mesh.points,np.zeros(len(mesh.points)),'|',label='points')    
     plt.show()
 
 def DrawShapes(fes):

@@ -56,7 +56,7 @@ class IntervalTransformation(ElementTransformation):
     # This class represents a transformation from the interval [0,1] to the given interval.
     def __init__(self, mesh, elnr):
         super().__init__(mesh, elnr)
-        self.interval = tuple(mesh.vertices[mesh.elements()[elnr]])
+        self.interval = tuple(mesh.points[mesh.elements()[elnr]])
         self.dim_range = 1
         self.dim_domain = 1
 
@@ -69,27 +69,27 @@ class IntervalTransformation(ElementTransformation):
         return np.array([[b-a]])
 
 class TriangleTransformation(ElementTransformation):
-    vertices = None
+    points = None
     def calculate_jacobian(self):
-        a,b,c = self.vertices
+        a,b,c = self.points
         return array([b-a,c-a]).T
 
     def __init__(self, mesh, elnr):
         super().__init__(mesh, elnr)
-        self.vertices = tuple(mesh.vertices[mesh.elements()[elnr]])
+        self.points = tuple(mesh.points[mesh.elements()[elnr]])
         self.jac = self.calculate_jacobian()
         self.dim_range = 2
         self.dim_domain = 2
 
-    def __init__(self, vertices):
+    def __init__(self, points):
         super().__init__(mesh = None, elnr = -1)
-        self.vertices = vertices
+        self.points = points
         self.jac = self.calculate_jacobian()
         self.dim_range = 2
         self.dim_domain = 2
 
     def _map(self, ip):
-        a,b,c = self.vertices
+        a,b,c = self.points
         return a+(b-a)*ip[0]+(c-a)*ip[1]
 
     def _jacobian(self, ip):

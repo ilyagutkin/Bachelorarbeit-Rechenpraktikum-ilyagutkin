@@ -24,7 +24,7 @@ class FESpace:
 class P1_Segments_Space(FESpace):
 
     def __init__(self, mesh):
-        self.ndof = len(mesh.vertices)
+        self.ndof = len(mesh.points)
         self.mesh = mesh
 
     def finite_element(self, elnr):
