@@ -106,3 +106,8 @@ class Monomials(RecursivePolynomial):
     def __init__(self):
         self.starter = [lambda x: np.ones_like(x)]
         self.rec_coeff = [lambda n,x: x]
+
+class LegendrePolynomials(RecursivePolynomial):
+    def __init__(self):
+        self.starter = [lambda x: np.ones_like(x), lambda x: x]
+        self.rec_coeff = [lambda n,x: -(n-1)/n, lambda n,x: (2*n-1)/n*x]

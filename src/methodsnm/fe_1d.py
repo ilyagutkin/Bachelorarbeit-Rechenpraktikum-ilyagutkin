@@ -136,3 +136,26 @@ class Lagrange_Segment_FE(Lagrange_FE, FE_1D):
 
     def __str__(self):
         return f"Lagrange Segment Finite Element(order={self.order})\n" + super().__str__()
+
+from methodsnm.recpol import *
+class RecPol_Segment_FE(FE_1D):
+    """
+    This class represents a Recursive Polynomial finite element on [0,1].
+    """
+    def __init__(self, order, recpol):
+        super().__init__()
+        self.order = order
+        self.ndof = order+1
+        self.recpol = recpol
+
+    def _evaluate_id(self, ip):
+        return self.recpol.evaluate_all(2*ip-1, self.order)
+
+    def _evaluate_id_array(self, ip):
+        return self.recpol.evaluate_all(2*ip[:,0]-1, self.order)
+
+    def __str__(self):
+        return f"RecPol Segment Finite Element(recpol={self.recpol}, order={self.order})\n" + super().__str__()
+
+def Legendre_Segment_FE(order):
+    return RecPol_Segment_FE(order, LegendrePolynomials())
