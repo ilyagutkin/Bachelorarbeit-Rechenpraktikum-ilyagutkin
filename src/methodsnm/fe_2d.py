@@ -108,7 +108,7 @@ class P3_Triangle_FE(TriangleFE, Lagrange_FE):
     def __init__(self):
         super().__init__()
         self.nodes = [ np.array([0,0]), np.array([1,0]), np.array([0,1]),
-                       np.array([1/3,2/3]), np.array([2/3,1/3]), np.array([1/3,0]), np.array([2/3,0]), np.array([0,1/3]), np.array([0,2/3]),
+                       np.array([2/3,1/3]), np.array([1/3,2/3]), np.array([1/3,0]), np.array([2/3,0]), np.array([0,1/3]), np.array([0,2/3]),
                        np.array([1/3,1/3]) ]
 
     def _evaluate_id(self, ip):
