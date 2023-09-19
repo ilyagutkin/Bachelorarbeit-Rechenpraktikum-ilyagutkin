@@ -121,6 +121,70 @@ def DrawFunction1D(f, sampling = 10, mesh = None, show_mesh = False):
         plt.plot(mesh.points,np.zeros(len(mesh.points)),'|',label='points')    
     plt.show()
 
+def RefTriangleIPs(sampling):
+
+    n_grid_pts = (sampling+1)*(sampling+2)//2
+
+    # map from (i,j) to n and vice versa:
+    cnt = 0
+    n2ij = []
+    ij2n = [[None for j in range(sampling+1)] for i in range(sampling+1)]
+    for i in range(sampling+1):
+        for j in range(sampling+1-i):
+            n2ij.append((i,j))
+            ij2n[i][j] = cnt
+            cnt += 1
+
+    # triangles for plotting:
+    trigs = [[ij2n[i][j], ij2n[i][j+1], ij2n[i+1][j]] for j in range(sampling) for i in range(sampling-j)]
+    trigs += [[ij2n[i][j+1], ij2n[i+1][j+1], ij2n[i+1][j]] for j in range(sampling-1) for i in range(sampling-j-1)]
+    trigs = np.array(trigs)
+
+    # integration points:
+    ips = np.array([[i/sampling,j/sampling] for i in range(sampling+1) for j in range(sampling+1-i)])
+    return ips, trigs
+
+def DrawFunction2D(f, sampling = 10, mesh = None, show_mesh = False, vmin=-1, vmax=1):
+    if not isinstance(f, list):
+        DrawFunction2D([f], sampling, mesh=mesh, show_mesh=show_mesh)
+        return
+    if not all([isinstance(fi, MeshFunction) for fi in f]):
+        raise ValueError("f must be a list of MeshFunction instances")
+    if mesh is None:
+        mesh = f[0].mesh
+
+    ref_ips, ref_trigs = RefTriangleIPs(sampling)
+
+    ax = plt.subplot(111, projection='3d')
+    for elnr, verts in enumerate(mesh.elements()):
+        trafo = mesh.trafo(elnr)
+        ips = trafo(ref_ips)
+        #plt.triplot(ips[:,0],ips[:,1],ref_trigs)
+        fevals = f[0].evaluate(ref_ips,trafo)
+
+        ax.plot_trisurf(ips[:,0], ips[:,1], ref_trigs, fevals, cmap=plt.cm.jet, linewidth=0.0, antialiased=True, vmin=vmin, vmax=vmax)
+    plt.show()
+        
+    # x_v = mesh.points
+    # trigs = mesh.elements()
+    # plt.triplot(x_v[:,0],x_v[:,1],trigs)
+    # plt.show()
+
+    # xy = []
+    # for elnr,vs in enumerate(mesh.elements()):
+    #     trafo = mesh.trafo(elnr)
+    #     xl, xr = mesh.points[vs]
+    #     yl, yr = mesh.points[vs]
+    #     xy += [[xl*(1-ip_x) + xr*ip_x, yl*(1-ip_y) + yr*ip_y] + [fi.evaluate(np.array([ip_x,ip_y]),trafo) for fi in f] for ip_x in np.linspace(0,1,sampling) for ip_y in np.linspace(0,1,sampling)]
+    # xy = np.array(xy)
+    # plt.plot(xy[:,0],xy[:,1::],'-')
+    # plt.xlabel("x")
+    # plt.ylabel("y")
+    # #plt.legend()
+    # if show_mesh:
+    #     plt.plot(mesh.points,np.zeros(len(mesh.points)),'|',label='points')    
+    # plt.show()
+
 def DrawShapes(fes):
    uhs = [FEFunction(fes) for i in range(fes.ndof)]
    for i in range(fes.ndof):

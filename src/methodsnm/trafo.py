@@ -2,6 +2,8 @@ from abc import ABC, abstractmethod
 import numpy as np
 from numpy import array
 
+from methodsnm.mesh import Mesh
+
 class Transformation(ABC):
     dim_domain = None
     dim_range = None
@@ -74,16 +76,16 @@ class TriangleTransformation(ElementTransformation):
         a,b,c = self.points
         return array([b-a,c-a]).T
 
-    def __init__(self, mesh, elnr):
-        super().__init__(mesh, elnr)
-        self.points = tuple(mesh.points[mesh.elements()[elnr]])
-        self.jac = self.calculate_jacobian()
-        self.dim_range = 2
-        self.dim_domain = 2
-
-    def __init__(self, points):
-        super().__init__(mesh = None, elnr = -1)
-        self.points = points
+    def __init__(self, mesh_or_points, elnr=None):
+        if isinstance(mesh_or_points, Mesh):
+            mesh = mesh_or_points
+            if elnr is None:
+                raise ValueError("TriangleTransformation needs an element number")
+            super().__init__(mesh, elnr)
+            self.points = tuple(mesh.points[mesh.elements()[elnr]])
+        else:
+            super().__init__(mesh = None, elnr = -1)
+            self.points = mesh_or_points
         self.jac = self.calculate_jacobian()
         self.dim_range = 2
         self.dim_domain = 2
