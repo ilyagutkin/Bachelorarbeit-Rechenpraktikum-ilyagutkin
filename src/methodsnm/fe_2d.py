@@ -92,7 +92,17 @@ class P2_Triangle_FE(TriangleFE, Lagrange_FE):
         Returns:
         numpy.ndarray: The values of the P2 triangle finite element at the given integration point.
         """
-        raise Exception("Not implemented")
+        ret = np.empty(self.ndof)
+
+        x,y = ip
+        lamb = [1-x-y,x,y]
+
+        for i in range(3):
+            ret[i] = lamb[i]*(2*lamb[i]-1)
+        for i in range(3):
+            for j in range(i):
+                ret[6-i-j] = lamb[i]*lamb[j]*4
+        return ret
 
     def __str__(self):
         return "P2 Triangle Finite Element\n" + super().__str__()
