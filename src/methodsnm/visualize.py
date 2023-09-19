@@ -86,6 +86,13 @@ def DrawTriangleFE(fe, sampling=10):
         ax.plot_trisurf(xvals, yvals, trigs, fevals[:,dof], cmap=plt.cm.Spectral, linewidth=0.0, antialiased=True)
     plt.show()
 
+def DrawMesh2D(mesh):
+    x_v = mesh.points
+    trigs = mesh.elements()
+    plt.triplot(x_v[:,0],x_v[:,1],trigs)
+    plt.show()
+
+
 def DrawMesh1D(mesh):
     x_v = mesh.points
     plt.plot(x_v,np.zeros(len(x_v)),'|',label='points')
