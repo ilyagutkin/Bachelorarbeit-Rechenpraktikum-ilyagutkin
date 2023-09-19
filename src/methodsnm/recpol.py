@@ -126,4 +126,8 @@ class JacobiPolynomials(RecursivePolynomial):
             alpha, beta = self.alpha, self.beta
             return (2*n+alpha+beta-1)*((2*n+alpha+beta)*(2*n+alpha+beta-2)*x+alpha**2-beta**2)/((2*n+alpha+beta-2)*(n+alpha+beta)*2*n)
         self.rec_coeff = [c0, c1]
-
+        
+class IntegratedLegendrePolynomials(RecursivePolynomial):
+    def __init__(self):
+        self.starter = [lambda x: x, lambda x: 0.5*(x**2-1)]
+        self.rec_coeff = [lambda n,x: -(n-2)/n, lambda n,x: (2*n-3)/n*x]

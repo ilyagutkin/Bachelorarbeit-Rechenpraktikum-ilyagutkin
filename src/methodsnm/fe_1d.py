@@ -162,3 +162,32 @@ def Legendre_Segment_FE(order):
 
 def Jacobi_Segment_FE(order, alpha, beta):
     return RecPol_Segment_FE(order, JacobiPolynomials(alpha, beta))
+
+
+class IntegratedLegendre_Segment_FE(FE_1D):
+    """
+    This class represents a finite element on [0,1]
+    that combines the lowest order P1 element with
+    integrated Legendre polynomials of higher order.
+    """
+    def __init__(self, order):
+        super().__init__()
+        self.order = order
+        self.ndof = order+1
+        self.recpol = IntegratedLegendrePolynomials()
+
+    def _evaluate_id(self, ip):
+        ret = np.empty((1,self.ndof))
+        ret[0,0:2] = np.array([1-ip[0],ip[0]])
+        ret[0,2::] = self.recpol.evaluate_all(2*ip-1, self.order-1)[0,1::]
+        return ret
+
+    def _evaluate_id_array(self, ip):
+        ret = np.empty((len(ip),self.ndof))
+        ret[:,0] = 1-ip[:,0]
+        ret[:,1] = ip[:,0]
+        ret[:,2::] = self.recpol.evaluate_all(2*ip[:,0]-1, self.order-1)[:,1::]
+        return ret
+
+    def __str__(self):
+        return f"RecPol Segment Finite Element(recpol={self.recpol}, order={self.order})\n" + super().__str__()
