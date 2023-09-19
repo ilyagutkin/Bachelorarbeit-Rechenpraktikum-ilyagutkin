@@ -110,10 +110,10 @@ class Lagrange_Segment_FE(Lagrange_FE, FE_1D):
                = w_j * prod_{i!=j} (x-x_i) with w_j = prod_i (1/(x_j-x_i))
                = w_j / (x-x_j) * l(x) with l(x) = prod_i (x-x_i)
         With further
-             1 = sum_i l_i(x) = sum_i w_i / (x-x_i) * l(x) 
-               = l(x) * sum_i w_i / (x-x_i)
+             1 = sum_i l_i(x) = sum_i (w_i / (x-x_i)) * l(x) 
+               = l(x) * sum_i (w_i / (x-x_i))
         we have
-        l_j(x) = w_j / (x-x_j) * sum_i w_i / (x-x_i)
+        l_j(x) = w_j / (x-x_j) * sum_i (w_i / (x-x_i))
         where the last sum is a does not depend on j.
 
         Evaluation costs are hence O(ndof) instead of O(ndof^2) for the naive approach.
