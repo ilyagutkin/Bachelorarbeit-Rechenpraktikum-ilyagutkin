@@ -93,10 +93,30 @@ class Lagrange_Segment_FE(Lagrange_FE, FE_1D):
             self.nodes = nodes
         else:
             self.nodes = [ np.array(x) for x in np.linspace(0, 1, self.ndof) ]
+        self.barycentric_weights = np.ones(self.ndof)
+        for i in range(self.ndof):
+            for j in range(self.ndof):
+                if i != j:
+                    self.barycentric_weights[i] /= (self.nodes[i] - self.nodes[j])              
 
     def _evaluate_id(self, ip):
         """
         Evaluates the Lagrange segment finite element at the given integration point.
+
+        Uses the barycentric form of the Lagrange polynomials, 
+        see https://en.wikipedia.org/wiki/Lagrange_polynomial#Barycentric_form
+
+        l_j(x) = prod_{i!=j} (x-x_i)/(x_j-x_i) 
+               = w_j * prod_{i!=j} (x-x_i) with w_j = prod_i (1/(x_j-x_i))
+               = w_j / (x-x_j) * l(x) with l(x) = prod_i (x-x_i)
+        With further
+             1 = sum_i l_i(x) = sum_i w_i / (x-x_i) * l(x) 
+               = l(x) * sum_i w_i / (x-x_i)
+        we have
+        l_j(x) = w_j / (x-x_j) * sum_i w_i / (x-x_i)
+        where the last sum is a does not depend on j.
+
+        Evaluation costs are hence O(ndof) instead of O(ndof^2) for the naive approach.
 
         Parameters:
         ip (numpy.ndarray): The integration point at which to evaluate the finite element.
@@ -104,7 +124,15 @@ class Lagrange_Segment_FE(Lagrange_FE, FE_1D):
         Returns:
         numpy.ndarray: The values of the Lagrange segment finite element at the given integration point.
         """
-        raise Exception("Not implemented")
+        if ip[0] in self.nodes:
+            ret = np.zeros(self.ndof)
+            ret[self.nodes.index(ip[0])] = 1
+        else:
+            denom = sum([self.barycentric_weights[i]/(ip[0]-self.nodes[i]) for i in range(self.ndof)])
+            ret = self.barycentric_weights.copy()
+            for i in range(self.ndof):
+                ret[i] /= (ip[0]-self.nodes[i]) * denom
+        return ret
 
     def __str__(self):
         return f"Lagrange Segment Finite Element(order={self.order})\n" + super().__str__()
