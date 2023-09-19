@@ -36,7 +36,7 @@ def identify_best_subplot_pattern(L):
     - N: int, the number of rows in the subplot grid
     - M: int, the number of columns in the subplot grid
     """
-    patterns = [(1,1),(2,1),(3,1),(3,2)]
+    patterns = [(1,1),(2,1),(3,1),(3,2),(3,3),(5,2)]
     s_of_p = [None for p in patterns]
     D_of_p = [None for p in patterns]
     for pi, p in enumerate(patterns):
