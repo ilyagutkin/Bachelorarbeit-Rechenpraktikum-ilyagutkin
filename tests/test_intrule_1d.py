@@ -12,14 +12,14 @@ except ImportError:
 def test_newtoncotes(K):
     nc = NewtonCotesRule(n=K)
     for k in range(K):
-        assert np.isclose(nc.integrate(lambda x: x**k),1/(k+1))
+        assert np.isclose(nc.integrate(lambda x: x**k),1/(k+1),rtol=1e-12)
         assert nc.exactness_degree >= k
 
 @pytest.mark.parametrize("K", [1,2,3,4,5,6,7,8,9,10])
 def test_gausslegendre(K):
     gl = GaussLegendreRule(n=K)
     for k in range(2*K):
-        assert np.isclose(gl.integrate(lambda x: x**k),1/(k+1))
+        assert np.isclose(gl.integrate(lambda x: x**k),1/(k+1),rtol=1e-12)
         assert gl.exactness_degree >= k
 
 @pytest.mark.parametrize("K", [1,2,3,4,5,6,7,8,9,10])
