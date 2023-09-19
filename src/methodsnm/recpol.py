@@ -111,3 +111,19 @@ class LegendrePolynomials(RecursivePolynomial):
     def __init__(self):
         self.starter = [lambda x: np.ones_like(x), lambda x: x]
         self.rec_coeff = [lambda n,x: -(n-1)/n, lambda n,x: (2*n-1)/n*x]
+
+class JacobiPolynomials(RecursivePolynomial):
+    alpha = None
+    beta = None
+    def __init__(self, alpha, beta):
+        self.alpha = alpha
+        self.beta = beta
+        self.starter = [lambda x: np.ones_like(x), lambda x: alpha+1+(alpha+beta+2)/2*(x-1)]
+        def c0(n,x):
+            alpha, beta = self.alpha, self.beta
+            return -2*(n+alpha-1)*(n+beta-1)*(2*n+alpha+beta)/((2*n+alpha+beta-2)*(n+alpha+beta)*2*n)
+        def c1(n,x):
+            alpha, beta = self.alpha, self.beta
+            return (2*n+alpha+beta-1)*((2*n+alpha+beta)*(2*n+alpha+beta-2)*x+alpha**2-beta**2)/((2*n+alpha+beta-2)*(n+alpha+beta)*2*n)
+        self.rec_coeff = [c0, c1]
+

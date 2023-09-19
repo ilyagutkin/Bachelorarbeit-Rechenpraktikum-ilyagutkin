@@ -159,3 +159,6 @@ class RecPol_Segment_FE(FE_1D):
 
 def Legendre_Segment_FE(order):
     return RecPol_Segment_FE(order, LegendrePolynomials())
+
+def Jacobi_Segment_FE(order, alpha, beta):
+    return RecPol_Segment_FE(order, JacobiPolynomials(alpha, beta))
