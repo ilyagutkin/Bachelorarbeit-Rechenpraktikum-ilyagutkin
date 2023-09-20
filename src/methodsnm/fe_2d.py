@@ -118,7 +118,7 @@ class P3_Triangle_FE(TriangleFE, Lagrange_FE):
     def __init__(self):
         super().__init__()
         self.nodes = [ np.array([0,0]), np.array([1,0]), np.array([0,1]),
-                       np.array([2/3,1/3]), np.array([1/3,2/3]), np.array([1/3,0]), np.array([2/3,0]), np.array([0,1/3]), np.array([0,2/3]),
+                       np.array([2/3,1/3]), np.array([1/3,2/3]), np.array([0,1/3]), np.array([0,2/3]), np.array([1/3,0]), np.array([2/3,0]), 
                        np.array([1/3,1/3]) ]
 
     def _evaluate_id(self, ip):
@@ -131,8 +131,53 @@ class P3_Triangle_FE(TriangleFE, Lagrange_FE):
         Returns:
         numpy.ndarray: The values of the P3 triangle finite element at the given integration point.
         """
-        raise Exception("Not implemented")
+        ret = np.empty(self.ndof)
+
+        x,y = ip
+        lamb = [1-x-y,x,y]
+
+        #vertex dofs:
+        for i in range(3):
+            ret[i] = 9.0/2.0*lamb[i]*(lamb[i]-1/3)*(lamb[i]-2/3)
+
+        #edge dofs:
+        for i in range(1,3): # major vertex 
+            for j in range(i): # minor vertex
+                edge_number = 3-i-j
+                ret[3+2*edge_number] = lamb[i]*lamb[j]*(lamb[j]-1/3)*27/2   # node next to minor vertex
+                ret[3+2*edge_number+1] = lamb[i]*lamb[j]*(lamb[i]-1/3)*27/2 # node next to major vertex
+        ret[9] = 27*lamb[0]*lamb[1]*lamb[2]
+        return ret
 
     def __str__(self):
         return "P3 Triangle Finite Element\n" + super().__str__()
 
+
+
+
+class P1Edge_Triangle_FE(TriangleFE, Lagrange_FE):
+    """
+    This class represents a P1 triangle finite element.
+    """
+    ndof = 3
+    order = 1
+    def __init__(self):
+        super().__init__()
+        self.nodes = [ np.array([0.5,0.5]), np.array([0,0.5]), np.array([0.5,0]) ]
+
+    def _evaluate_id(self, ip):
+        """
+        Evaluates the P1Edge triangle finite element at the given integration point.
+
+        Parameters:
+        ip (numpy.ndarray): The integration point at which to evaluate the finite element.
+
+        Returns:
+        numpy.ndarray: The values of the P1Edge triangle finite element at the given integration point.
+        """
+        x,y = ip
+        lamb = [1-x-y,x,y]
+        return array([1-2*lamb[i] for i in range(3)])
+
+    def __str__(self):
+        return "P1Edge Triangle Finite Element"
