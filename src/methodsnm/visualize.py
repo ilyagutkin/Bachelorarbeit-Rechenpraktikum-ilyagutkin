@@ -121,7 +121,7 @@ def DrawFunction1D(f, sampling = 10, mesh = None, show_mesh = False):
         plt.plot(mesh.points,np.zeros(len(mesh.points)),'|',label='points')    
     plt.show()
 
-def RefTriangleIPs(sampling):
+def RefTriangleIPs(sampling, shrink_eps = 0):
 
     n_grid_pts = (sampling+1)*(sampling+2)//2
 
@@ -141,19 +141,22 @@ def RefTriangleIPs(sampling):
     trigs = np.array(trigs)
 
     # integration points:
-    ips = np.array([[i/sampling,j/sampling] for i in range(sampling+1) for j in range(sampling+1-i)])
+    if shrink_eps > 0:
+        ips = np.array([[(1-shrink_eps)*i/sampling+shrink_eps/3,(1-shrink_eps)*j/sampling+shrink_eps/3] for i in range(sampling+1) for j in range(sampling+1-i)])
+    else:
+        ips = np.array([[i/sampling,j/sampling] for i in range(sampling+1) for j in range(sampling+1-i)])
     return ips, trigs
 
-def DrawFunction2D(f, sampling = 10, mesh = None, show_mesh = False, vmin=-1, vmax=1):
+def DrawFunction2D(f, sampling = 10, mesh = None, show_mesh = False, vmin=-1, vmax=1, shrink_eps = 0):
     if not isinstance(f, list):
-        DrawFunction2D([f], sampling, mesh=mesh, show_mesh=show_mesh)
+        DrawFunction2D([f], sampling, mesh=mesh, show_mesh=show_mesh, vmin=vmin, vmax=vmax, shrink_eps=shrink_eps)
         return
     if not all([isinstance(fi, MeshFunction) for fi in f]):
         raise ValueError("f must be a list of MeshFunction instances")
     if mesh is None:
         mesh = f[0].mesh
 
-    ref_ips, ref_trigs = RefTriangleIPs(sampling)
+    ref_ips, ref_trigs = RefTriangleIPs(sampling, shrink_eps=shrink_eps)
 
     ax = plt.subplot(111, projection='3d')
     for elnr, verts in enumerate(mesh.elements()):
