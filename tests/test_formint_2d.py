@@ -3,7 +3,6 @@ import import_hack
 from methodsnm.fe_2d import *
 from methodsnm.intrule_2d import *
 from methodsnm.formint import *
-from methodsnm.mesh import Mesh1D
 from methodsnm.meshfct import *
 from numpy.linalg import norm
 

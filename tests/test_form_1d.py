@@ -5,7 +5,7 @@ from methodsnm.fes import *
 #from methodsnm.intrule_1d import *
 from methodsnm.formint import *
 from methodsnm.forms import *
-from methodsnm.mesh import Mesh1D
+from methodsnm.mesh_1d import Mesh1D
 from methodsnm.meshfct import *
 from numpy.linalg import norm
 from scipy import sparse

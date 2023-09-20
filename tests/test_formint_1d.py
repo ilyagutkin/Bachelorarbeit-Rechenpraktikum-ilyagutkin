@@ -2,7 +2,7 @@ import pytest
 import import_hack
 from methodsnm.fe_1d import *
 from methodsnm.formint import *
-from methodsnm.mesh import Mesh1D
+from methodsnm.mesh_1d import Mesh1D
 from methodsnm.meshfct import *
 from numpy.linalg import norm
 
