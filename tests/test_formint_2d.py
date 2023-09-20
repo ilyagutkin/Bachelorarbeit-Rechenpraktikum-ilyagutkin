@@ -13,7 +13,7 @@ except ImportError:
 
 @pytest.mark.parametrize("h", [1/5,1/10,1/20])
 def test_source_2d(h):
-    triangle = TriangleTransformation(points = array([[0,0],[-h,0],[0,h]]))
+    triangle = TriangleTransformation(array([[0,0],[-h,0],[0,h]]))
     p1 = P1_Triangle_FE()
     c = ConstantFunction(1) 
     s = SourceIntegral(c)
