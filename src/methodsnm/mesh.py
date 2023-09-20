@@ -9,6 +9,8 @@ class Mesh(ABC):
     edges = None
     faces = None
 
+    face2edges = None
+
     bndry_vertices = None
     bndry_edges = None
     

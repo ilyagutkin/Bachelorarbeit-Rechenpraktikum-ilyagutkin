@@ -23,13 +23,26 @@ class FESpace:
 
 class P1_Segments_Space(FESpace):
 
-    def __init__(self, mesh):
-        self.ndof = len(mesh.points)
+    def __init__(self, mesh, periodic=False):
+        self.periodic = periodic
+        if periodic:
+            self.ndof = len(mesh.points) - 1 
+        else:
+            self.ndof = len(mesh.points)
         self.mesh = mesh
+        self.fe = P1_Segment_FE()
 
     def finite_element(self, elnr):
-        return P1_Segment_FE()
+        return self.fe
 
     def element_dofs(self, elnr):
-        return self.mesh.edges[elnr]
+        dofs = self.mesh.edges[elnr]
+        if self.periodic and elnr == len(self.mesh.edges) - 1:
+            return [dofs[0],0]
+        else:
+            return dofs
 
+try: 
+    from methodsnm.solution.fes_sol import *
+except:
+    pass
