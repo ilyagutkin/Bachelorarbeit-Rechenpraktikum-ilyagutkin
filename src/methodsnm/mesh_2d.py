@@ -26,9 +26,9 @@ class StructuredRectangleMesh(Mesh2D):
         self.bndry_edges = [i for i in range(M)] + [2*N*M+M+j for j in range(N)] \
                               + [N*M+M-1-i for i in range(M)] + [(N+1)*M+N-1-j for j in range(N)]
         offset = 2*M*N+M+N
-        self.faces2edges = [[i+j*M, offset+i+j*M, M*(N+1)+j+i*N] for i in range(M) 
+        self.faces2edges = [[offset+i+j*M, M*(N+1)+j+i*N, i+j*M] for i in range(M) 
                                                                      for j in range(N)] \
-                          +[[M*(N+1)+j+(i+1)*N, i+(j+1)*M, offset+i+j*M] for i in range(M) 
+                          +[[i+(j+1)*M, offset+i+j*M, M*(N+1)+j+(i+1)*N] for i in range(M) 
                                                                      for j in range(N)]
 
     def trafo(self, elnr, codim=0, bndry=False):
