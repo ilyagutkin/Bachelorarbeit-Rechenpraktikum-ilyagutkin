@@ -50,8 +50,8 @@ def identify_best_subplot_pattern(L):
     N,M = pN*D, pM*D
     return N,M
 
-
-def DrawTriangleFE(fe, sampling=10):
+import matplotlib.tri as mtri
+def DrawTriangleFE(fe, sampling=10, contour=False, figsize=(10,6)):
     x0vals = np.array([0,1,0,0])
     y0vals = np.array([0,0,1,0])
 
@@ -78,18 +78,31 @@ def DrawTriangleFE(fe, sampling=10):
     trigs += [[ij2n[i][j+1], ij2n[i+1][j+1], ij2n[i+1][j]] for j in range(sampling-1) for i in range(sampling-j-1)]
 
     N,M = identify_best_subplot_pattern(fe.ndof)
+    plt.figure(figsize=figsize)
+
     for dof in range(fe.ndof):
         m = dof % M; n = dof // M
-        ax = plt.subplot2grid((N,M),(n, m), projection='3d')
-        for i in range(3):
-            ax.plot(x0vals[i:i+2], y0vals[i:i+2], linewidth=2.0, color="black", antialiased=True)
-        ax.plot_trisurf(xvals, yvals, trigs, fevals[:,dof], cmap=plt.cm.Spectral, linewidth=0.0, antialiased=True)
+        if contour:
+            ax = plt.subplot2grid((N,M),(n, m))
+        else:
+            ax = plt.subplot2grid((N,M),(n, m), projection='3d')
+        if not contour:
+            for i in range(3):
+                ax.plot(x0vals[i:i+2], y0vals[i:i+2], linewidth=2.0, color="black", antialiased=True)
+            ax.plot_trisurf(xvals, yvals, trigs, fevals[:,dof], cmap=plt.cm.Spectral, linewidth=0.0, antialiased=True)
+        else:
+            triang = mtri.Triangulation(xvals, yvals, trigs)
+            tcf = ax.tricontourf(triang, fevals[:,dof])
+            plt.colorbar(tcf)
+            for i in range(3):
+                ax.plot(x0vals[i:i+2], y0vals[i:i+2], linewidth=2.0, color="black", antialiased=True)
+    plt.tight_layout(pad=1.0)
     plt.show()
 
 def DrawMesh2D(mesh):
     x_v = mesh.points
     trigs = mesh.elements()
-    plt.triplot(x_v[:,0],x_v[:,1],trigs)
+    plt.triplot(x_v[:,0],x_v[:,1],trigs, 'ko-')
     plt.show()
 
 
@@ -167,26 +180,7 @@ def DrawFunction2D(f, sampling = 10, mesh = None, show_mesh = False, vmin=-1, vm
 
         ax.plot_trisurf(ips[:,0], ips[:,1], ref_trigs, fevals, cmap=plt.cm.jet, linewidth=0.0, antialiased=True, vmin=vmin, vmax=vmax)
     plt.show()
-        
-    # x_v = mesh.points
-    # trigs = mesh.elements()
-    # plt.triplot(x_v[:,0],x_v[:,1],trigs)
-    # plt.show()
 
-    # xy = []
-    # for elnr,vs in enumerate(mesh.elements()):
-    #     trafo = mesh.trafo(elnr)
-    #     xl, xr = mesh.points[vs]
-    #     yl, yr = mesh.points[vs]
-    #     xy += [[xl*(1-ip_x) + xr*ip_x, yl*(1-ip_y) + yr*ip_y] + [fi.evaluate(np.array([ip_x,ip_y]),trafo) for fi in f] for ip_x in np.linspace(0,1,sampling) for ip_y in np.linspace(0,1,sampling)]
-    # xy = np.array(xy)
-    # plt.plot(xy[:,0],xy[:,1::],'-')
-    # plt.xlabel("x")
-    # plt.ylabel("y")
-    # #plt.legend()
-    # if show_mesh:
-    #     plt.plot(mesh.points,np.zeros(len(mesh.points)),'|',label='points')    
-    # plt.show()
 
 def DrawShapes(fes, sampling = 10):
    uhs = [FEFunction(fes) for i in range(fes.ndof)]
