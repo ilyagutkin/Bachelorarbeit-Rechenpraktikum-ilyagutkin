@@ -160,9 +160,13 @@ def RefTriangleIPs(sampling, shrink_eps = 0):
         ips = np.array([[i/sampling,j/sampling] for i in range(sampling+1) for j in range(sampling+1-i)])
     return ips, trigs
 
-def DrawFunction2D(f, sampling = 10, mesh = None, show_mesh = False, vmin=-1, vmax=1, shrink_eps = 0):
+from matplotlib import colors as pltcolor
+def DrawFunction2D(f, sampling = 10, mesh = None, show_mesh = False, 
+                   vmin=None, vmax=None, shrink_eps = 0, contour=False, figsize=(10,6)):
     if not isinstance(f, list):
-        DrawFunction2D([f], sampling, mesh=mesh, show_mesh=show_mesh, vmin=vmin, vmax=vmax, shrink_eps=shrink_eps)
+        DrawFunction2D([f], sampling, mesh=mesh, show_mesh=show_mesh, 
+                       vmin=vmin, vmax=vmax, shrink_eps=shrink_eps, 
+                       contour=contour, figsize=figsize)
         return
     if not all([isinstance(fi, MeshFunction) for fi in f]):
         raise ValueError("f must be a list of MeshFunction instances")
@@ -171,14 +175,34 @@ def DrawFunction2D(f, sampling = 10, mesh = None, show_mesh = False, vmin=-1, vm
 
     ref_ips, ref_trigs = RefTriangleIPs(sampling, shrink_eps=shrink_eps)
 
-    ax = plt.subplot(111, projection='3d')
+    ne = len(mesh.elements())
+    allips = np.empty((ref_ips.shape[0]*ne,2))
+    n_ips_block = len(ref_ips)
+    allfevals = np.empty(ref_ips.shape[0]*ne)
+    alltrigs = np.empty((ref_trigs.shape[0]*ne,3),dtype=int)
+
     for elnr, verts in enumerate(mesh.elements()):
         trafo = mesh.trafo(elnr)
         ips = trafo(ref_ips)
-        #plt.triplot(ips[:,0],ips[:,1],ref_trigs)
+        allips[elnr*n_ips_block:(elnr+1)*n_ips_block,:] = ips
         fevals = f[0].evaluate(ref_ips,trafo)
+        allfevals[elnr*n_ips_block:(elnr+1)*n_ips_block] = fevals
+        alltrigs[elnr*ref_trigs.shape[0]:(elnr+1)*ref_trigs.shape[0],:] = ref_trigs + elnr*n_ips_block
 
-        ax.plot_trisurf(ips[:,0], ips[:,1], ref_trigs, fevals, cmap=plt.cm.jet, linewidth=0.0, antialiased=True, vmin=vmin, vmax=vmax)
+    if vmin is None:
+        vmin = np.min(allfevals)
+    if vmax is None:
+        vmax = np.max(allfevals)
+
+    plt.figure(figsize=figsize)
+    if not contour:
+        ax = plt.subplot(111, projection='3d')
+        ax.plot_trisurf(allips[:,0], allips[:,1], alltrigs, allfevals, cmap=plt.cm.jet, linewidth=0.0, antialiased=True, vmin=vmin, vmax=vmax)
+    else:
+        triang = mtri.Triangulation(allips[:,0], allips[:,1], alltrigs)
+        tcf = plt.tricontourf(triang, allfevals, cmap=plt.cm.jet, vmin=vmin, vmax=vmax)
+        plt.colorbar(tcf)
+    plt.tight_layout(pad=1.0)
     plt.show()
 
 
