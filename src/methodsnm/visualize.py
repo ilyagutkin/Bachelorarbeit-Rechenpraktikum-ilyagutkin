@@ -188,11 +188,11 @@ def DrawFunction2D(f, sampling = 10, mesh = None, show_mesh = False, vmin=-1, vm
     #     plt.plot(mesh.points,np.zeros(len(mesh.points)),'|',label='points')    
     # plt.show()
 
-def DrawShapes(fes):
+def DrawShapes(fes, sampling = 10):
    uhs = [FEFunction(fes) for i in range(fes.ndof)]
    for i in range(fes.ndof):
        uhs[i].vector[i] = 1
-   DrawFunction1D(uhs)   
+   DrawFunction1D(uhs, sampling=sampling)   
 
 if __name__ == "__main__":
     p1 = P1_Segment_FE()
