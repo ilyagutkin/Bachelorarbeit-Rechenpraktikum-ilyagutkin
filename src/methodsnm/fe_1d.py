@@ -177,9 +177,9 @@ class IntegratedLegendre_Segment_FE(FE_1D):
         self.recpol = IntegratedLegendrePolynomials()
 
     def _evaluate_id(self, ip):
-        ret = np.empty((1,self.ndof))
-        ret[0,0:2] = np.array([1-ip[0],ip[0]])
-        ret[0,2::] = self.recpol.evaluate_all(2*ip-1, self.order-1)[0,1::]
+        ret = np.empty(self.ndof)
+        ret[0:2] = np.array([1-ip[0],ip[0]])
+        ret[2::] = self.recpol.evaluate_all(2*ip-1, self.order-1)[0,1::]
         return ret
 
     def _evaluate_id_array(self, ip):
