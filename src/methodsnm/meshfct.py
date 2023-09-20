@@ -50,7 +50,7 @@ class GlobalFunction(MeshFunction):
 class FEFunction(MeshFunction):
     fes = None
     vector = None
-    def __init__(self, fes, coeffs = None):
+    def __init__(self, fes):
         self.mesh = fes.mesh
         self.fes = fes
         self.vector = np.zeros(fes.ndof)
