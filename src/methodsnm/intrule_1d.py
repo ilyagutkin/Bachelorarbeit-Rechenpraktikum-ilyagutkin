@@ -33,7 +33,7 @@ def evaluate_exactness_degree(rule, max_order=None):
     a,b = rule.interval
     i=0
     while True:
-        if not np.isclose(rule.integrate(lambda x: x**i), (b**(i+1)-a**(i+1))/(i+1)):
+        if not np.isclose(rule.integrate(lambda x: x**i), (b**(i+1)-a**(i+1))/(i+1), rtol=1e-12):
             if i == 0:
                 print("Warning: Exactness degree is below 0")
             return i-1

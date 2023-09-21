@@ -17,15 +17,20 @@ class IntRule:
     def __str__(self):
         return f"Integration rule \"{self.__class__.__name__}\" with {len(self.nodes)} nodes (exactness degree {self.exactness_degree}):\nnodes = {self.nodes}\nweights = {self.weights}"
 
-from methodsnm.intrule_1d import MidPointRule, NewtonCotesRule
+from methodsnm.intrule_1d import MidPointRule, NewtonCotesRule, NP_GaussLegendreRule
 from methodsnm.intrule_2d import EdgeMidPointRule
 
+npgauss_warned = False
 def select_integration_rule(order, eltype):
     if eltype == "segment":
         if order == 1:
             return MidPointRule()
         else:
-            return NewtonCotesRule(n=order+1)
+            if npgauss_warned == False:
+                print("Warning: Using NumPy Gauss rules!")
+                npgauss_warned = True
+            return NP_GaussLegendreRule (n=order//2+1)
+            #return NewtonCotesRule(n=order+1)
     elif eltype == "triangle":
         if order == 1:
             return EdgeMidPointRule()
