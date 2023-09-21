@@ -28,8 +28,9 @@ class FE_2D(FE):
         right = ip.copy() + array([eps,0])
         top = ip.copy() + array([0,eps])
         bottom = ip.copy() - array([0,eps])
-        return array([[(self._evaluate_id(right) - self._evaluate_id(left))/(2*eps)], 
-                      [(self._evaluate_id(top) - self._evaluate_id(bottom))/(2*eps)]])
+        ret = array([(self._evaluate_id(right) - self._evaluate_id(left))/(2*eps), 
+                      (self._evaluate_id(top) - self._evaluate_id(bottom))/(2*eps)])
+        return ret
 
 
 class TriangleFE(FE_2D):
