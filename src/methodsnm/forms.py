@@ -26,7 +26,6 @@ class LinearForm(Form):
         self.integrals = []
     
     def assemble(self):
-        #raise NotImplementedError("Not implemented")
         self.vector = np.zeros(self.fes.ndof)
         mesh = self.fes.mesh
         for elnr, verts in enumerate(mesh.elements()):
@@ -53,7 +52,6 @@ class BilinearForm(Form):
         self.integrals = []
     
     def assemble(self):
-        #raise NotImplementedError("Not implemented")
         self.matrix = sparse.lil_matrix((self.fes_test.ndof, self.fes_trial.ndof))
         mesh = self.fes.mesh
         for elnr, verts in enumerate(mesh.elements()):
