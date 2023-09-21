@@ -22,6 +22,7 @@ from methodsnm.intrule_2d import EdgeMidPointRule
 
 npgauss_warned = False
 def select_integration_rule(order, eltype):
+    global npgauss_warned
     if eltype == "segment":
         if order == 1:
             return MidPointRule()
@@ -32,7 +33,7 @@ def select_integration_rule(order, eltype):
             return NP_GaussLegendreRule (n=order//2+1)
             #return NewtonCotesRule(n=order+1)
     elif eltype == "triangle":
-        if order == 1:
+        if order <= 2:
             return EdgeMidPointRule()
         else:
             raise NotImplementedError("Not implemented")

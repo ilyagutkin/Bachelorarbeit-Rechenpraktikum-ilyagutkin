@@ -103,8 +103,9 @@ class NP_GaussLegendreRule(IntRule1D):
         """
         self.interval = interval
         a,b = interval
-        self.nodes = np.polynomial.legendre.leggauss(n)[0]
-        self.nodes = 0.5*(a+b) + 0.5*(b-a)*self.nodes
+        self.nodes = np.empty((n,1))
+        nodes = np.polynomial.legendre.leggauss(n)[0]
+        self.nodes[:,0] = 0.5*(a+b) + 0.5*(b-a)*nodes
         self.weights = np.polynomial.legendre.leggauss(n)[1]
         self.weights = 0.5*(b-a)*self.weights
         self.exactness_degree = 2*n-1
@@ -145,7 +146,8 @@ class SP_GaussJacobiRule(IntRule1D):
         self.alpha = alpha
         self.beta = beta
         nodes, weights = scipy.special.roots_jacobi(n,alpha,beta)
-        self.nodes = 0.5*(a+b) + 0.5*(b-a)*nodes
+        self.nodes = np.empty((n,1))
+        self.nodes[:,0] = 0.5*(a+b) + 0.5*(b-a)*nodes
         self.weights = 0.5*(b-a)*weights
         self.exactness_degree = evaluate_exactness_degree(self)
 
