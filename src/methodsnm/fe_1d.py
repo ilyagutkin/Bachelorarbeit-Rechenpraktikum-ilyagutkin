@@ -54,6 +54,9 @@ class P1_Segment_FE(FE_1D, Lagrange_FE):
     def __str__(self):
         return "P1 Segment Finite Element\n" + super().__str__()
 
+    def _evaluate_deriv(self, ip):
+        return np.full(shape=ip.shape + (2,), fill_value=[-1,1])
+
 class P2_Segment_FE(FE_1D):
     """
     This class represents a P1 segment finite element.
@@ -78,6 +81,13 @@ class P2_Segment_FE(FE_1D):
 
     def __str__(self):
         return "P2 Segment Finite Element\n" + super().__str__()
+
+    def _evaluate_deriv(self, ip):
+        deriv = np.zeros(ip.shape + (3,))
+        deriv[:, 0] = -1
+        deriv[:, 1] = 1
+        deriv[:, 2] = 4 - 8 * ip
+        return deriv
     
 class Lagrange_Segment_FE(Lagrange_FE, FE_1D):
     """
