@@ -18,7 +18,7 @@ class IntRule:
         return f"Integration rule \"{self.__class__.__name__}\" with {len(self.nodes)} nodes (exactness degree {self.exactness_degree}):\nnodes = {self.nodes}\nweights = {self.weights}"
 
 from methodsnm.intrule_1d import MidPointRule, NewtonCotesRule, NP_GaussLegendreRule
-from methodsnm.intrule_2d import EdgeMidPointRule
+from methodsnm.intrule_2d import EdgeMidPointRule, DuffyBasedRule
 
 npgauss_warned = False
 def select_integration_rule(order, eltype):
@@ -33,10 +33,10 @@ def select_integration_rule(order, eltype):
             return NP_GaussLegendreRule (n=order//2+1)
             #return NewtonCotesRule(n=order+1)
     elif eltype == "triangle":
-        if order <= 2:
+        if order <= 1:
             return EdgeMidPointRule()
         else:
-            raise NotImplementedError("Not implemented")
+            return DuffyBasedRule(order)
     else:
         raise NotImplementedError("select_integration_rule only implemented for segments and triangles (not for " + eltype + ", yet)")
 
