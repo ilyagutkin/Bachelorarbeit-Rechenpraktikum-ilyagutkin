@@ -148,7 +148,7 @@ class SP_GaussJacobiRule(IntRule1D):
         nodes, weights = scipy.special.roots_jacobi(n,alpha,beta)
         self.nodes = np.empty((n,1))
         self.nodes[:,0] = 0.5*(a+b) + 0.5*(b-a)*nodes
-        self.weights = 0.5*(b-a)*weights
+        self.weights = 0.5**(alpha+beta+1)*(b-a)*weights
         self.exactness_degree = evaluate_exactness_degree(self)
 
 class GaussJacobiRule(IntRule1D):
