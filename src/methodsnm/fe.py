@@ -117,3 +117,23 @@ class Lagrange_FE(FE):
 
     def __str__(self):
         return f"Lagrange-FE-obj(order={self.order},nodes={self.ndof})"
+
+
+
+class Node_FE(FE):
+    """
+    FE for a point (node).
+    """    
+
+    def __init__(self):
+        self.eltype = "point"
+        self.dim = 0
+
+    def _evaluate_id(self, ip):
+        return np.ones((1,))
+
+    def _evaluate_id_array(self, ip):
+        return np.ones((len(ip),1))
+
+    def _evaluate_deriv(self, ip):
+        raise Exception("Derivative of node FE should not be called")
