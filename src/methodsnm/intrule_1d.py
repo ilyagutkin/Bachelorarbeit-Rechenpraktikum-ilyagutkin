@@ -84,8 +84,15 @@ class NewtonCotesRule(IntRule1D):
 
         self.nodes = array(nodes)
 
-        # Compute weights:
-        raise NotImplementedError("Not implemented")
+        h = b-a
+        # Compute weights on [0,1]
+        x = [(nodes[i]-a)/h for i in range(n)]
+        # sum w[i] * x[i]**k = 1/(k+1)
+        A = np.array([[x[i]**k for i in range(n)] for k in range(n)])
+        b = np.array([1.0/(k+1) for k in range(n)])
+        w = np.linalg.solve(A,b)
+        self.weights = w*h
+        self.exactness_degree = evaluate_exactness_degree(self)
 
         self.exactness_degree = evaluate_exactness_degree(self)
 
