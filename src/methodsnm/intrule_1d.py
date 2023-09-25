@@ -94,8 +94,6 @@ class NewtonCotesRule(IntRule1D):
         self.weights = w*h
         self.exactness_degree = evaluate_exactness_degree(self)
 
-        self.exactness_degree = evaluate_exactness_degree(self)
-
 class NP_GaussLegendreRule(IntRule1D):
     """
     Wrapper class for the Gauss-Legendre rule for 1D numerical integration of numpy.
