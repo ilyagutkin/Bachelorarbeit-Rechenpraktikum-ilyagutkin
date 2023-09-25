@@ -7,6 +7,7 @@ from methodsnm.mesh import Mesh
 class Transformation(ABC):
     dim_domain = None
     dim_range = None
+    eltype = None
 
     def __init__(self, interval):
         pass
@@ -49,7 +50,6 @@ class Transformation(ABC):
 class ElementTransformation(Transformation):
     mesh = None
     elnr = None
-
     def __init__(self, mesh, elnr):
         self.elnr = elnr
         self.mesh = mesh
@@ -61,6 +61,7 @@ class IntervalTransformation(ElementTransformation):
         self.interval = tuple(mesh.points[mesh.elements()[elnr]])
         self.dim_range = 1
         self.dim_domain = 1
+        self.eltype = "segment"
 
     def _map(self, ip):
         a,b = self.interval
@@ -89,6 +90,7 @@ class TriangleTransformation(ElementTransformation):
         self.jac = self.calculate_jacobian()
         self.dim_range = 2
         self.dim_domain = 2
+        self.eltype = "triangle"
 
     def _map(self, ip):
         a,b,c = self.points
