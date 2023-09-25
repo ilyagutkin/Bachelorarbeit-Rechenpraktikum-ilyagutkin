@@ -149,7 +149,7 @@ class SP_GaussJacobiRule(IntRule1D):
         self.nodes = np.empty((n,1))
         self.nodes[:,0] = 0.5*(a+b) + 0.5*(b-a)*nodes
         self.weights = 0.5**(alpha+beta+1)*(b-a)*weights
-        self.exactness_degree = evaluate_exactness_degree(self)
+        self.exactness_degree = None
 
 class GaussJacobiRule(IntRule1D):
     """
