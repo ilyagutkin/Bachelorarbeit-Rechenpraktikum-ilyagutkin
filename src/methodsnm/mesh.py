@@ -20,16 +20,19 @@ class Mesh(ABC):
     def elements(self, codim=0, bndry=False):
         if self.dimension - codim == 0:
             if bndry:
-                return self.vertices[self.bndry_vertices]
+                return Exception("Invalid dimension")
             else:
                 return self.vertices
         elif self.dimension - codim == 1:   
             if bndry:
-                return self.edges[self.bndry_edges]
+                return [[self.vertices[i]] for i in self.bndry_vertices]
             else:
                 return self.edges
         elif self.dimension - codim == 2:   
-            return self.faces
+            if bndry:
+                return self.edges[self.bndry_edges]
+            else:
+                return self.faces
         else:
             raise Exception("Invalid dimension")
 
