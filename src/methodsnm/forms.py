@@ -68,3 +68,19 @@ class BilinearForm(Form):
                     self.matrix[dofi,dofj] += elmat[i,j]
         self.matrix = self.matrix.tocsr()
 
+
+from methodsnm.intrule import select_integration_rule
+from numpy.linalg import det
+def compute_difference_L2(uh, uex, mesh, intorder=5):
+    sumint = 0
+    for elnr in range(len(mesh.elements())):
+        trafo = mesh.trafo(elnr)
+        intrule = select_integration_rule(intorder, trafo.eltype)
+        uhvals = uh.evaluate(intrule.nodes, trafo)
+        uexvals = uex.evaluate(intrule.nodes, trafo)
+        diff = np.zeros(len(intrule.nodes))
+        diff = (uhvals - uexvals)**2
+        F = trafo.jacobian(intrule.nodes)
+        w = array([abs(det(F[i,:,:])) * intrule.weights[i] for i in range(F.shape[0])])
+        sumint += np.dot(w, diff)
+    return np.sqrt(sumint)
