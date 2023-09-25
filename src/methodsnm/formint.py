@@ -27,7 +27,12 @@ class SourceIntegral(LinearFormIntegral):
         self.coeff = coeff
 
     def compute_element_vector(self, fe, trafo, intrule = None):
-        raise NotImplementedError("Not implemented")
+        if intrule is None:
+            intrule = select_integration_rule(2*fe.order, fe.eltype)
+        shapes = fe.evaluate(intrule.nodes)
+        coeffs = self.coeff.evaluate(intrule.nodes, trafo)
+        weights = [w*c*abs(det(trafo.jacobian(ip))) for ip,w,c in zip(intrule.nodes,intrule.weights,coeffs)]
+        return np.dot(shapes.T, weights)
 
 class BilinearFormIntegral(FormIntegral):
 
@@ -44,7 +49,17 @@ class MassIntegral(BilinearFormIntegral):
         self.coeff = coeff
 
     def compute_element_matrix(self, fe_test, fe_trial, trafo, intrule = None):
-        raise NotImplementedError("Not implemented")
+        if intrule is None:
+            if fe_test.eltype != fe_trial.eltype:
+                raise Exception("Finite elements must have the same el. type")
+            intrule = select_integration_rule(fe_test.order + fe_trial.order, fe_test.eltype)
+        shapes_test = fe_test.evaluate(intrule.nodes)
+        shapes_trial = fe_test.evaluate(intrule.nodes)
+        coeffs = self.coeff.evaluate(intrule.nodes, trafo)
+        F = trafo.jacobian(intrule.nodes)
+        adetF = array([abs(det(F[i,:,:])) for i in range(F.shape[0])])
+        ret = einsum("ij,ik,i,i,i->jk", shapes_test, shapes_trial, adetF, coeffs, intrule.weights)
+        return ret
 
 class LaplaceIntegral(BilinearFormIntegral):
 
@@ -52,5 +67,15 @@ class LaplaceIntegral(BilinearFormIntegral):
         self.coeff = coeff
 
     def compute_element_matrix(self, fe_test, fe_trial, trafo, intrule = None):
-        raise NotImplementedError("Not implemented")
-
+        if intrule is None:
+            if fe_test.eltype != fe_trial.eltype:
+                raise Exception("Finite elements must have the same el. type")
+            intrule = select_integration_rule(fe_test.order + fe_trial.order, fe_test.eltype)
+        dshapes_ref_test = fe_test.evaluate(intrule.nodes, deriv=True)
+        dshapes_ref_trial = fe_test.evaluate(intrule.nodes, deriv=True)
+        F = trafo.jacobian(intrule.nodes)
+        invF = array([inv(F[i,:,:]) for i in range(F.shape[0])])
+        adetF = array([abs(det(F[i,:,:])) for i in range(F.shape[0])])
+        coeffs = self.coeff.evaluate(intrule.nodes, trafo)
+        ret = einsum("ijk,imn,ijl,iml,i,i,i->kn", dshapes_ref_test, dshapes_ref_trial, invF, invF, adetF, coeffs, intrule.weights)
+        return ret
