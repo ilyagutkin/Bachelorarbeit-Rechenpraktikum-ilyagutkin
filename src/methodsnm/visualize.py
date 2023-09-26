@@ -19,7 +19,7 @@ def DrawSegmentFE(fe, sampling=100, xkcd_style=False, derivative=False):
     if xkcd_style:
         plt.xkcd()
     plt.plot(xvals, yvals)
-    plt.legend(["$\phi_{"+str(i)+"}$" for i in range(fe.ndof)])
+    plt.legend(["$\\phi_{"+str(i)+"}$" for i in range(fe.ndof)])
     plt.show()
 
 # identify best subplot pattern:
