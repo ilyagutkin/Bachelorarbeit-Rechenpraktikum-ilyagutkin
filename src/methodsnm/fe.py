@@ -128,7 +128,7 @@ class Node_FE(FE):
     def __init__(self):
         self.eltype = "point"
         self.dim = 0
-	self.ndof = 1
+        self.ndof = 1
 
     def _evaluate_id(self, ip):
         return np.ones((1,))
