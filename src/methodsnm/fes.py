@@ -66,7 +66,6 @@ class P1_Segments_Space(VertexFirstSpace_1D):
         else:
             self.ndof = len(mesh.points)
         self.fe = P1_Segment_FE()
-        self.sfe = Node_FE()
 
     def _finite_element(self, elnr):
         return self.fe
