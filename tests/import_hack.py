@@ -4,4 +4,5 @@ This allows to use updated versions of the modules without having to reinstall t
 """
 import sys
 sys.path.append('../src')
+sys.path.append('src')    #if tests are run from the root directory
 import methodsnm

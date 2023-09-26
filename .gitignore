@@ -127,3 +127,4 @@ graphics/classes.pdf
 lectures/all.py
 lectures/packages.pdf
 src/*.html
+.vscode/settings.json
