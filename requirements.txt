@@ -14,3 +14,6 @@ ipywidgets
 ipympl
 pytest
 #manim
+
+# testing dependencies
+pytest-cov

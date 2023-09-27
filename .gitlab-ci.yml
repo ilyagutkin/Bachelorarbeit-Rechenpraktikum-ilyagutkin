@@ -31,13 +31,13 @@ pages:
     - mkdir public/doc
     - cd jlcontent/src && for f in methodsnm/*.py; do pydoc -w methodsnm.$(basename $f .py); done && pydoc -w methodsnm && cd ../.. && mv jlcontent/src/*.html public/doc
     - mv public ..
+    - cd ..
+    - cp -r htmlcov public/htmlcov
     
   artifacts:
     paths:
       - public # mandatory, other folder won't work
-  only:
-    - main # the branch you want to publish
-  needs: []
+  needs: [coverage]
 
 pytests:
   stage: test
@@ -76,3 +76,19 @@ docker_build:
   when: manual 
   needs: []
 
+coverage:
+  stage: test
+  image: python:latest
+  before_script:
+   - python -m pip install -r requirements.txt
+   - python -m pip install -r jupyterlite-requirements.txt
+  script:
+    - pytest --cov=src/methodsnm --cov-report term --cov-report html --cov-report xml:coverage.xml
+  coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
+  artifacts:
+    paths:
+      - htmlcov/*
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
