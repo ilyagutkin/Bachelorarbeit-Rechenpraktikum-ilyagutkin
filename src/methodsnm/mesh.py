@@ -8,11 +8,17 @@ class Mesh(ABC):
     vertices = None
     edges = None
     faces = None
+    volumes = None
+    hypercells = None
 
+    hepercells2volumes = None
+    volumes2faces = None
     face2edges = None
 
     bndry_vertices = None
     bndry_edges = None
+    bndry_faces = None
+    bndry_volumes = None
     
     def __init__(self):
         raise NotImplementedError("Not implemented")
@@ -33,6 +39,17 @@ class Mesh(ABC):
                 return self.edges[self.bndry_edges]
             else:
                 return self.faces
+        elif self.dimension - codim == 3:   
+            if bndry:
+                return self.faces[self.bndry_faces]
+            else:
+                return self.volumes
+        elif self.dimension - codim == 4:
+            if bndry:
+                return self.volumes[self.bndry_volumes]
+            else:
+                return self.hypercells    
+        
         else:
             raise Exception("Invalid dimension")
 
