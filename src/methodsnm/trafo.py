@@ -98,4 +98,37 @@ class TriangleTransformation(ElementTransformation):
 
     def _jacobian(self, ip):
         return self.jac
+    
+class TesseraktTransformation(ElementTransformation):
+    points = None
+    def calculate_jacobian(self):
+        M = self.mesh.xlength
+        N = self.mesh.ylength
+        K = self.mesh.zlength
+        L = self.mesh.tlength
+        return np.diag([1/M,1/N,1/K,1/L]).T
+    
+    def __init__(self, mesh_or_points, elnr=None):
+        if isinstance(mesh_or_points, Mesh):
+            mesh = mesh_or_points
+            if elnr is None:
+                raise ValueError("TesseraktTransformation needs an element number")
+            super().__init__(mesh, elnr)
+            self.points = tuple(mesh.points[mesh.elements()[elnr]])
+        else:
+            super().__init__(mesh = None, elnr = -1)
+            self.points = mesh_or_points
+        self.jac = self.calculate_jacobian()
+        self.dim_range = 4
+        self.dim_domain = 4
+        self.eltype = "tesserakt"
+        
+    def _map(self, ip):
+        def elementwise_min_point(points):
+            return np.min(points, axis=0)
 
+        xmin = elementwise_min_point(self.points)
+        return xmin + np.array([ip[0],ip[1],ip[2],ip[3]])*np.array([1/self.mesh.xlength,1/self.mesh.ylength,1/self.mesh.zlength,1/self.mesh.tlength])
+
+    def _jacobian(self,ip):
+        return self.jac

@@ -32,12 +32,27 @@ class FE_4D(FE):
         right3 = ip.copy() - array([0,0,eps,0])
         left4= ip.copy() + array([0,0,0,eps])
         right4 = ip.copy() - array([0,0,0,eps])
-        return array([[(self._evaluate_id(right) - self._evaluate_id(left))/(2*eps)], 
-                      [(self._evaluate_id(right2) - self._evaluate_id(left2))/(2*eps)],
-                      [(self._evaluate_id(right3) - self._evaluate_id(left3))/(2*eps)],
-                      [(self._evaluate_id(right4) - self._evaluate_id(left4))/(2*eps)]])
+        return array([(self._evaluate_id(right) - self._evaluate_id(left))/(2*eps), 
+                      (self._evaluate_id(right2) - self._evaluate_id(left2))/(2*eps),
+                      (self._evaluate_id(right3) - self._evaluate_id(left3))/(2*eps),
+                      (self._evaluate_id(right4) - self._evaluate_id(left4))/(2*eps)])
 
-class P1_Tesserakt_FE(Lagrange_FE):
+
+class TesseraktFE(FE_4D):
+    """
+    Abstract base class for finite elements on tesserakt.
+    """    
+
+    def __init__(self):
+        super().__init__()
+        self.eltype = "tesserakt"
+
+    @abstractmethod
+    def _evaluate_id(self, ip):
+        raise Exception("Not implemented - Base class should not be used")
+class P1_Tesserakt_FE(TesseraktFE,Lagrange_FE):
+    def _evaluate_deriv(self, ip):
+        return super()._evaluate_deriv(ip)
     """
     This class represents a P1 Tesserakt finite element.
     """

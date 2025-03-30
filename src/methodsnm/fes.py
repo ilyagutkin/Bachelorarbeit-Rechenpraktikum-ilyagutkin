@@ -3,6 +3,7 @@ import numpy as np
 from numpy import array
 from methodsnm.fe_1d import *
 from methodsnm.fe_2d import *
+from methodsnm.fe_4d import *
 
 class FESpace(ABC):
     """
@@ -245,3 +246,21 @@ class P1Edge_Triangle_Space(FESpace):
     def _element_dofs(self, elnr):
         edges = self.mesh.faces2edges[elnr]
         return edges
+    
+class P1_Tesserakt_Space(FESpace):
+    """
+    This class represents a P1 Tesserakt finite element space.
+    """
+    def __init__(self, mesh):
+        self.ndof = len(mesh.points)
+        self.mesh = mesh
+        self.fe = P1_Tesserakt_FE()
+        
+
+    def _finite_element(self,elnr):
+        return self.fe
+
+    def _element_dofs(self, elnr):
+        return self.mesh.elements()[elnr]
+
+

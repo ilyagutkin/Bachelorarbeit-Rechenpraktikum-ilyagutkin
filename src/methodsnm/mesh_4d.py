@@ -3,7 +3,7 @@ import numpy as np
 from numpy import array
 
 from methodsnm.mesh import Mesh
-from methodsnm.trafo import TriangleTransformation
+from methodsnm.trafo import TesseraktTransformation
 
 class Mesh4D(Mesh):
     def __init__(self):
@@ -13,8 +13,20 @@ class StructuredTesseraktMesh(Mesh4D):
     def __init__(self, M, N , K, L, mapping = None):
         super().__init__()
 
-        def check_bndryedges(self, i):
-            if set(i).issubset(set(self.bndry_vertices)):
+        def check_bndryedges(bndry_vertices, edge):
+            if set(edge).issubset(set(bndry_vertices)):
+                return True
+            else:
+                return False
+            
+        def check_bndryfaces(bndry_vertices, face):
+            if set(face).issubset(set(bndry_vertices)):
+                return True
+            else:
+                return False
+        
+        def check_bndryvolumes(bndry_vertices, volume):
+            if set(volume).issubset(set(bndry_vertices)):
                 return True
             else:
                 return False
@@ -38,17 +50,11 @@ class StructuredTesseraktMesh(Mesh4D):
         
         if mapping is None:
             mapping = lambda x,y,z,t: [x,y,z,t]
-        self.points = np.array([array(mapping(i/M,j/N,k/K,l/L)) for k in range(K+1) for l in range(L+1) for j in range(N+1) for i in range(M+1) ])
-        self.vertices = np.arange((M+1)*(N+1)*(K+1)*(L+1))
 
-        self.bndry_vertices = np.array(rekursiv_bndry([L,K,N,M]))
-        self.bndry_edges = [i for i in self.edges if check_bndryedges(self,i) ]
+        self.points = np.array([array(mapping(i/M,j/N,k/K,l/L)) for k in range(K+1) for l in range(L+1) for j in range(N+1) for i in range(M+1) ])
+        
+        self.vertices = np.arange((M+1)*(N+1)*(K+1)*(L+1))
                               
-        offset = 2*M*N+M+N
-        self.faces2edges = np.array([[offset+i+j*M, M*(N+1)+j+i*N, i+j*M] for i in range(M) 
-                                                                          for j in range(N)] \
-                           +[[i+(j+1)*M, offset+i+j*M, M*(N+1)+j+(i+1)*N] for i in range(M) 
-                                                                          for j in range(N)], dtype=int)
         self.hypercells = np.array([[l*(M+1)*(K+1)*(N+1)+k*(M+1)*(N+1)+j*(M+1)+i,l*(M+1)*(K+1)*(N+1)+k*(M+1)*(N+1)+j*(M+1)+i+1,
                                      l*(M+1)*(K+1)*(N+1)+k*(M+1)*(N+1)+(j+1)*(M+1)+i,l*(M+1)*(K+1)*(N+1)+k*(M+1)*(N+1)+(j+1)*(M+1)+i+1,
                                      l*(M+1)*(K+1)*(N+1)+(k+1)*(M+1)*(N+1)+j*(M+1)+i,l*(M+1)*(K+1)*(N+1)+(k+1)*(M+1)*(N+1)+j*(M+1)+i+1,
@@ -93,7 +99,15 @@ class StructuredTesseraktMesh(Mesh4D):
                               +[[l*(M+1)*(K+1)*(N+1)+k*(M+1)*(N+1)+j*(M+1)+i,l*(M+1)*(K+1)*(N+1)+(k+1)*(M+1)*(N+1)+j*(M+1)+i]   for i in range(M+1) for j in range(N+1) for k in range(K)   for l in range(L+1)]
                               +[[l*(M+1)*(K+1)*(N+1)+k*(M+1)*(N+1)+j*(M+1)+i,(l+1)*(M+1)*(K+1)*(N+1)+k*(M+1)*(N+1)+j*(M+1)+i] for i in range(M+1) for j in range(N+1) for k in range(K+1)   for l in range(L)], dtype=int)
 
+        self.bndry_vertices = np.array(rekursiv_bndry([L,K,N,M]))
+        self.bndry_edges = [i for i in self.edges if check_bndryedges(self.bndry_vertices,i) ]
+        self.bndry_faces = [i for i in self.faces if check_bndryfaces(self.bndry_vertices,i) ]
+        self.bndry_volumes = [i for i in self.volumes if check_bndryvolumes(self.bndry_vertices,i) ]
+        self.xlength = M
+        self.ylength = N    
+        self.zlength = K
+        self.tlength = L
     def trafo(self, elnr, codim=0, bndry=False):
         if codim > 0 or bndry:
             raise NotImplementedError("Not implemented yet")
-        return TriangleTransformation(self, elnr)
+        return TesseraktTransformation(self, elnr)

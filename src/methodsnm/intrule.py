@@ -19,7 +19,7 @@ class IntRule:
 
 from methodsnm.intrule_1d import MidPointRule, NewtonCotesRule, NP_GaussLegendreRule
 from methodsnm.intrule_2d import EdgeMidPointRule, DuffyBasedRule
-
+from methodsnm.intrule_4d import EdgeMidPointRule4D 
 npgauss_warned = False
 def select_integration_rule(order, eltype):
     global npgauss_warned
@@ -37,6 +37,8 @@ def select_integration_rule(order, eltype):
             return EdgeMidPointRule()
         else:
             return DuffyBasedRule(order)
+    elif eltype == "tesserakt":
+        return EdgeMidPointRule4D(order)
     else:
-        raise NotImplementedError("select_integration_rule only implemented for segments and triangles (not for " + eltype + ", yet)")
+        raise NotImplementedError("select_integration_rule only implemented for segments and triangles and tesserakts (not for " + eltype + ", yet)")
 
