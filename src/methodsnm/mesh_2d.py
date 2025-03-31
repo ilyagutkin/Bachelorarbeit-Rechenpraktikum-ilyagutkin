@@ -30,7 +30,48 @@ class StructuredRectangleMesh(Mesh2D):
                                                                           for j in range(N)] \
                            +[[i+(j+1)*M, offset+i+j*M, M*(N+1)+j+(i+1)*N] for i in range(M) 
                                                                           for j in range(N)], dtype=int)
+        
+    def find_element(self, ip):
+        def check_element_contains_point(points, ip , tol=1e-10):
+            """
+            Prüfe, ob Punkt `ip` im Dreieck `points` liegt.
+            
+            Parameters:
+                ip: [x, y] – zu prüfender Punkt
+                points: 3x2-Array – drei Dreieckspunkte [[x0, y0], [x1, y1], [x2, y2]]
+                tol: Toleranz für numerische Robustheit
+            
+            Returns:
+                True oder False
+            """
+            a = np.array(points[0])
+            b = np.array(points[1])
+            c = np.array(points[2])
+            p = np.array(ip)
 
+            v0 = c - a
+            v1 = b - a
+            v2 = p - a
+
+            M = np.column_stack((v1, v0))
+            try:
+                l1_l2 = np.linalg.solve(M, v2)
+            except np.linalg.LinAlgError:
+                return False  # Degeneriertes Dreieck
+
+            λ1, λ2 = l1_l2
+            λ0 = 1 - λ1 - λ2
+
+            return (λ0 >= -tol) and (λ1 >= -tol) and (λ2 >= -tol)
+            # Find the element that contains the point ip
+            # This is a simple linear search, which can be improved with a more efficient algorithm
+            
+        for el in range(len(self.faces)):
+            points = self.points[self.faces[el]]
+            if check_element_contains_point(points,ip):
+                return el
+        raise Exception("point outside mesh")
+    
     def trafo(self, elnr, codim=0, bndry=False):
         if codim > 0 or bndry:
             raise NotImplementedError("Not implemented yet")

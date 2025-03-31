@@ -55,7 +55,10 @@ class FEFunction(MeshFunction):
         self.fes = fes
         self.vector = np.zeros(fes.ndof)
 
-    def _evaluate(self, ip, trafo):
+    def _evaluate(self, ip, trafo= None):
+        if trafo is None:
+            el = self.mesh.find_element(ip)
+            trafo = self.mesh.trafo(el)
         fe = self.fes.finite_element(trafo.elnr)
         dofs = self.fes.element_dofs(trafo.elnr)
         return np.dot(fe.evaluate(ip), self.vector[dofs])
@@ -65,3 +68,18 @@ class FEFunction(MeshFunction):
         dofs = self.fes.element_dofs(trafo.elnr)
         return np.dot(fe.evaluate(ips), self.vector[dofs])
 
+    def _set(self, f , boundary=False):
+        """
+        Sets the values of the finite element function to zero.
+        """
+        if str(self.fes.fe) != "P1 Triangle Finite Element":
+            raise Exception("Only P1 triangle finite element is supported")
+        if boundary:
+            for dof in self.mesh.bndry_vertices:
+                x = self.mesh.points[dof]
+                self.vector[dof] = f(x)
+        else:
+            for dof in self.mesh.vertices:
+                x = self.mesh.points[dof]
+                self.vector[dof] = f(x)
+            
