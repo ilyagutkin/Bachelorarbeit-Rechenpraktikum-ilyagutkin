@@ -68,12 +68,12 @@ class FEFunction(MeshFunction):
         dofs = self.fes.element_dofs(trafo.elnr)
         return np.dot(fe.evaluate(ips), self.vector[dofs])
 
-    def _set(self, f , boundary=False):
+    def _set(self, f , boundary=False,bndry=None):
         """
-        Sets the values of the finite element function to zero.
+        Sets the values of the finite element function to f.
         """
-        if str(self.fes.fe) != "P1 Triangle Finite Element":
-            raise Exception("Only P1 triangle finite element is supported")
+        if str(self.fes.fe) not in ["P1 Triangle Finite Element","P1 Tesserakt Finite Element"]:
+            raise Exception("Only P1 triangle finite element,P1 Tesserakt Finite Element is supported")
         if boundary:
             for dof in self.mesh.bndry_vertices:
                 x = self.mesh.points[dof]
@@ -82,4 +82,7 @@ class FEFunction(MeshFunction):
             for dof in self.mesh.vertices:
                 x = self.mesh.points[dof]
                 self.vector[dof] = f(x)
-            
+        if bndry is not None:
+            for dof in bndry:
+                x = self.mesh.points[dof]
+                self.vector[dof] = f(x)   

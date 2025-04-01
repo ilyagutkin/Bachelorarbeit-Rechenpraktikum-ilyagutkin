@@ -107,6 +107,19 @@ class StructuredTesseraktMesh(Mesh4D):
         self.ylength = N    
         self.zlength = K
         self.tlength = L
+
+    def filter_bndry_points(self ,extreme_type, index):
+        points = self.points[self.bndry_vertices]
+    
+        if extreme_type == "min":
+            target_value = min(p[index] for p in points)
+        elif extreme_type == "max":
+            target_value = max(p[index] for p in points)
+        else:
+            raise ValueError("extreme_type must be either 'min' or 'max'")
+        
+        return [i for i in self.bndry_vertices if self.points[i][index] == target_value]
+
     def trafo(self, elnr, codim=0, bndry=False):
         if codim > 0 or bndry:
             raise NotImplementedError("Not implemented yet")

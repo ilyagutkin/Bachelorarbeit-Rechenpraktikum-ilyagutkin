@@ -80,44 +80,44 @@ class LaplaceIntegral(BilinearFormIntegral):
         ret = einsum("ijk,imn,ijl,iml,i,i,i->kn", dshapes_ref_test, dshapes_ref_trial, invF, invF, adetF, coeffs, intrule.weights)
         return ret
     
-class LaplaceIntegral2(BilinearFormIntegral):
+class LaplaceIntegral_without_time(BilinearFormIntegral):
 
     def __init__(self, coeff=ConstantFunction(1)):
         self.coeff = coeff
 
-    def compute_element_matrix(self, fe_test, fe_trial, trafo, intrule=None):
+    def compute_element_matrix(self, fe_test, fe_trial, trafo, intrule = None):
         if intrule is None:
             if fe_test.eltype != fe_trial.eltype:
                 raise Exception("Finite elements must have the same el. type")
-            order = fe_test.order + fe_trial.order
-            intrule = select_integration_rule(order, fe_test.eltype)
+            intrule = select_integration_rule(fe_test.order + fe_trial.order, fe_test.eltype)
+        dshapes_ref_test = fe_test.evaluate(intrule.nodes, deriv=True)
+        dshapes_ref_test[:,-1,:] = 0
+        dshapes_ref_trial = fe_trial.evaluate(intrule.nodes, deriv=True)
+        dshapes_ref_trial[:,-1,:] = 0
+        F = trafo.jacobian(intrule.nodes)
+        invF = array([inv(F[i,:,:]) for i in range(F.shape[0])])
+        adetF = array([abs(det(F[i,:,:])) for i in range(F.shape[0])])
+        coeffs = self.coeff.evaluate(intrule.nodes, trafo)
+        ret = einsum("ijk,imn,ijl,iml,i,i,i->kn", dshapes_ref_test, dshapes_ref_trial, invF, invF, adetF, coeffs, intrule.weights)
+        return ret
+    
+class TimeIntegral(BilinearFormIntegral):
+    def __init__(self, coeff = ConstantFunction(1)):
+        self.coeff = coeff
 
-        # Ableitungen der Basisfunktionen im Referenzraum
-        dshapes_ref_test = fe_test.evaluate(intrule.nodes, deriv=True)   # shape: (npoints, ndofs_test, dim)
-        dshapes_ref_trial = fe_trial.evaluate(intrule.nodes, deriv=True) # shape: (npoints, ndofs_trial, dim)
-
-        dshapes_ref_test = dshapes_ref_test[:, :, :2]
-        dshapes_ref_trial = dshapes_ref_trial[:, :, :2]
-        # Geometrische Transformation
-        F = trafo.jacobian(intrule.nodes)         # shape: (npoints, dim, dim)
-        invF = np.linalg.inv(F)                   # shape: (npoints, dim, dim)
-        detF = np.abs(np.linalg.det(F))           # shape: (npoints,)
-        
-        # Transformation der Gradienten in Weltkoordinaten
-        grad_test = einsum("pki,pij->pkj", dshapes_ref_test, invF)
-        grad_trial = einsum("pni,pij->pnj", dshapes_ref_trial, invF)
-
-        # Koeffizientenfunktion (z. B. konstantes 1)
-        coeffs = self.coeff.evaluate(intrule.nodes, trafo)  # shape: (npoints,)
-
-        # Skalarprodukt der Gradienten
-        scalar_prods = einsum("pkj,pnj->pkn", grad_test, grad_trial)
-
-        # Gewichtung mit |det(J)|, Gewichte und Koeffizienten
-        weights = intrule.weights                           # shape: (npoints,)
-        factors = coeffs * detF * weights                   # shape: (npoints,)
-
-        # Endliche Summation über Integrationspunkte
-        elmat = einsum("pkn,p->kn", scalar_prods, factors)  # shape: (ndofs_test, ndofs_trial)
-
-        return elmat
+    def compute_element_matrix(self, fe_test, fe_trial, trafo, intrule = None):
+        if intrule is None:
+            if fe_test.eltype != fe_trial.eltype:
+                raise Exception("Finite elements must have the same el. type")
+            intrule = select_integration_rule(fe_test.order + fe_trial.order, fe_test.eltype)
+        gradu = fe_test.evaluate(intrule.nodes, deriv=True)
+        ut = gradu[:, -1, :]
+        v = fe_trial.evaluate(intrule.nodes)
+        F = trafo.jacobian(intrule.nodes)
+        invF = array([inv(F[i,:,:]) for i in range(F.shape[0])])
+        invF_last = invF[:, -1, -1]
+        adetF = array([abs(det(F[i,:,:])) for i in range(F.shape[0])])
+        coeffs = self.coeff.evaluate(intrule.nodes, trafo)
+        ret = einsum("ij,ik,i,i,i,i->jk",  v, ut, invF_last, adetF, coeffs, intrule.weights)
+        return ret
+    

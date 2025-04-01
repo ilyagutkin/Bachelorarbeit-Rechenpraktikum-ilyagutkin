@@ -30,7 +30,20 @@ class StructuredRectangleMesh(Mesh2D):
                                                                           for j in range(N)] \
                            +[[i+(j+1)*M, offset+i+j*M, M*(N+1)+j+(i+1)*N] for i in range(M) 
                                                                           for j in range(N)], dtype=int)
+
+    def filter_bndry_points(self ,extreme_type, index):
+        points = self.points[self.bndry_vertices]
+    
+        if extreme_type == "min":
+            target_value = min(p[index] for p in points)
+        elif extreme_type == "max":
+            target_value = max(p[index] for p in points)
+        else:
+            raise ValueError("extreme_type must be either 'min' or 'max'")
         
+        return [i for i in self.bndry_vertices if self.points[i][index] == target_value]
+
+
     def find_element(self, ip):
         def check_element_contains_point(points, ip , tol=1e-10):
             """

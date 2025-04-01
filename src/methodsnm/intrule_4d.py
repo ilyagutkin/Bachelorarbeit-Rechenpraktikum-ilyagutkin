@@ -32,13 +32,14 @@ import numpy as np
 from numpy.polynomial.legendre import leggauss
 from itertools import product
 class IntRule4D(IntRuleTesserakt):
+    @staticmethod
     def get_1d_rule_unit_interval(order):
         nodes, weights = leggauss(order)
         # transform from [-1,1] to [0,1]
         nodes = 0.5 * (nodes + 1)
         weights = 0.5 * weights
         return nodes, weights
-
+    @staticmethod
     def get_4d_integration_rule(order):
         """
         Liefert die Knoten und Gewichte einer Tensorprodukt-Integrationsregel in 4D auf [0,1]^4
@@ -47,7 +48,7 @@ class IntRule4D(IntRuleTesserakt):
             nodes_4d: ndarray shape (n^4, 4)
             weights_4d: ndarray shape (n^4,)
         """
-        nodes_1d, weights_1d = get_1d_rule_unit_interval(order)
+        nodes_1d, weights_1d = IntRule4D.get_1d_rule_unit_interval(order)
 
         # alle Kombinationen von 4D-Punkten
         nodes_4d = []
@@ -60,6 +61,7 @@ class IntRule4D(IntRuleTesserakt):
             weights_4d.append(weight)
 
         return np.array(nodes_4d), np.array(weights_4d)
+    
     def __init__(self, order):
         """
         Initializes the integration rule with the given order.
@@ -68,5 +70,5 @@ class IntRule4D(IntRuleTesserakt):
         order (int): The order of the integration rule.
         """
 
-        self.nodes, self.weights = get_4d_integration_rule(order)
+        self.nodes, self.weights = IntRule4D.get_4d_integration_rule(order)
         

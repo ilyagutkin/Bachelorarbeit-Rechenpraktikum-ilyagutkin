@@ -16,3 +16,4 @@ import methodsnm.meshfct
 import methodsnm.recpol
 import methodsnm.trafo
 import methodsnm.visualize
+import methodsnm.solver
