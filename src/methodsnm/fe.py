@@ -45,7 +45,7 @@ class FE(ABC):
             ret[i,:] = self._evaluate_id(ips[i])
         return ret
 
-    def _evaluate_deriv_array(self, ips):
+    def _evaluate_deriv_array(self, ips ,direction=None):
         """
         Evaluates the derivative of finite element at multiple integration points at once.
         Base class implementation is a simple loop over the integration points.
@@ -58,10 +58,17 @@ class FE(ABC):
         numpy.ndarray: The values of the finite element at the given integration points.
                        shape: (len(ips), dim, ndof)
         """
-        ret = np.empty((len(ips), self.dim, self.ndof))
-        for i in range(len(ips)):
-            ret[i,:,:] = self._evaluate_deriv(ips[i])
-        return ret
+        
+        if direction is not None:
+            ret = np.empty((len(ips),self.ndof))
+            for i in range(len(ips)):
+                ret[i,:] = self._evaluate_deriv(ips[i])[direction]
+            return ret
+        else:
+            ret = np.empty((len(ips), self.dim, self.ndof))
+            for i in range(len(ips)):
+                ret[i,:,:] = self._evaluate_deriv(ips[i])
+            return ret
 
     @abstractmethod
     def _evaluate_deriv(self, ip):
@@ -77,7 +84,7 @@ class FE(ABC):
         """
         raise Exception("Not implemented - Base class should not be used")
 
-    def evaluate(self, ip, deriv=False):
+    def evaluate(self, ip, deriv=False, direction =None):
         """
         Evaluates the (derivative of) finite element at given integration point(s).
 
@@ -95,11 +102,15 @@ class FE(ABC):
         if isinstance(ip, np.ndarray):
             if ip.ndim == 1:
                 if deriv:
+                    if direction is not None:
+                        return self._evaluate_deriv(ip)[direction]
                     return self._evaluate_deriv(ip)
                 else:
                     return self._evaluate_id(ip)
             else:
                 if deriv:
+                    if direction is not None:
+                        return self._evaluate_deriv_array(ip,direction)
                     return self._evaluate_deriv_array(ip)
                 else:
                     return self._evaluate_id_array(ip)

@@ -37,6 +37,7 @@ def select_integration_rule(order, eltype):
             return EdgeMidPointRule()
         else:
             return DuffyBasedRule(order)
+        
     elif eltype == "tesserakt":
         return IntRule4D(order)
     else:
