@@ -51,18 +51,18 @@ class StructuredTesseraktMesh(Mesh4D):
         if mapping is None:
             mapping = lambda x,y,z,t: [x,y,z,t]
 
-        self.points = np.array([array(mapping(i/M,j/N,k/K,l/L)) for k in range(K+1) for l in range(L+1) for j in range(N+1) for i in range(M+1) ])
+        self.points = np.array([array(mapping(i/M,j/N,k/K,l/L)) for l in range(L+1) for k in range(K+1) for j in range(N+1) for i in range(M+1) ])
         
         self.vertices = np.arange((M+1)*(N+1)*(K+1)*(L+1))
                               
-        self.hypercells = np.array([[l*(M+1)*(K+1)*(N+1)+k*(M+1)*(N+1)+j*(M+1)+i,l*(M+1)*(K+1)*(N+1)+k*(M+1)*(N+1)+j*(M+1)+i+1,
-                                     l*(M+1)*(K+1)*(N+1)+k*(M+1)*(N+1)+(j+1)*(M+1)+i,l*(M+1)*(K+1)*(N+1)+k*(M+1)*(N+1)+(j+1)*(M+1)+i+1,
-                                     l*(M+1)*(K+1)*(N+1)+(k+1)*(M+1)*(N+1)+j*(M+1)+i,l*(M+1)*(K+1)*(N+1)+(k+1)*(M+1)*(N+1)+j*(M+1)+i+1,
-                                     l*(M+1)*(K+1)*(N+1)+(k+1)*(M+1)*(N+1)+(j+1)*(M+1)+i,l*(M+1)*(K+1)*(N+1)+(k+1)*(M+1)*(N+1)+(j+1)*(M+1)+i+1,
-                                     (l+1)*(M+1)*(K+1)*(N+1)+k*(M+1)*(N+1)+j*(M+1)+i,(l+1)*(M+1)*(K+1)*(N+1)+k*(M+1)*(N+1)+j*(M+1)+i+1,
-                                     (l+1)*(M+1)*(K+1)*(N+1)+k*(M+1)*(N+1)+(j+1)*(M+1)+i,(l+1)*(M+1)*(K+1)*(N+1)+k*(M+1)*(N+1)+(j+1)*(M+1)+i+1,
-                                     (l+1)*(M+1)*(K+1)*(N+1)+(k+1)*(M+1)*(N+1)+j*(M+1)+i,(l+1)*(M+1)*(K+1)*(N+1)+(k+1)*(M+1)*(N+1)+j*(M+1)+i+1,
-                                     (l+1)*(M+1)*(K+1)*(N+1)+(k+1)*(M+1)*(N+1)+(j+1)*(M+1)+i,(l+1)*(M+1)*(K+1)*(N+1)+(k+1)*(M+1)*(N+1)+(j+1)*(M+1)+i+1] for i in range(M) for j in range(N) for k in range(K) for l in range(L)], dtype=int)
+        self.hypercells = np.array([[    l*(M+1)*(K+1)*(N+1)+    k*(M+1)*(N+1)+    j*(M+1)+i,     l*(M+1)*(K+1)*(N+1)+    k*(M+1)*(N+1)+    j*(M+1)+i+1,
+                                         l*(M+1)*(K+1)*(N+1)+    k*(M+1)*(N+1)+(j+1)*(M+1)+i,     l*(M+1)*(K+1)*(N+1)+    k*(M+1)*(N+1)+(j+1)*(M+1)+i+1,
+                                         l*(M+1)*(K+1)*(N+1)+(k+1)*(M+1)*(N+1)+    j*(M+1)+i,     l*(M+1)*(K+1)*(N+1)+(k+1)*(M+1)*(N+1)+    j*(M+1)+i+1,
+                                         l*(M+1)*(K+1)*(N+1)+(k+1)*(M+1)*(N+1)+(j+1)*(M+1)+i,     l*(M+1)*(K+1)*(N+1)+(k+1)*(M+1)*(N+1)+(j+1)*(M+1)+i+1,
+                                     (l+1)*(M+1)*(K+1)*(N+1)+    k*(M+1)*(N+1)+    j*(M+1)+i, (l+1)*(M+1)*(K+1)*(N+1)+    k*(M+1)*(N+1)+    j*(M+1)+i+1,
+                                     (l+1)*(M+1)*(K+1)*(N+1)+    k*(M+1)*(N+1)+(j+1)*(M+1)+i, (l+1)*(M+1)*(K+1)*(N+1)+    k*(M+1)*(N+1)+(j+1)*(M+1)+i+1,
+                                     (l+1)*(M+1)*(K+1)*(N+1)+(k+1)*(M+1)*(N+1)+    j*(M+1)+i, (l+1)*(M+1)*(K+1)*(N+1)+(k+1)*(M+1)*(N+1)+    j*(M+1)+i+1,
+                                     (l+1)*(M+1)*(K+1)*(N+1)+(k+1)*(M+1)*(N+1)+(j+1)*(M+1)+i, (l+1)*(M+1)*(K+1)*(N+1)+(k+1)*(M+1)*(N+1)+(j+1)*(M+1)+i+1] for i in range(M) for j in range(N) for k in range(K) for l in range(L)], dtype=int)
         
         self.volumes = np.array([[l*(M+1)*(K+1)*(N+1)+k*(M+1)*(N+1)+j*(M+1)+i,l*(M+1)*(K+1)*(N+1)+k*(M+1)*(N+1)+j*(M+1)+i+1,
                                      l*(M+1)*(K+1)*(N+1)+k*(M+1)*(N+1)+(j+1)*(M+1)+i,l*(M+1)*(K+1)*(N+1)+k*(M+1)*(N+1)+(j+1)*(M+1)+i+1,

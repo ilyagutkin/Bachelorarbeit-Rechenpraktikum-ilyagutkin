@@ -26,12 +26,12 @@ class FE_4D(FE):
         eps = 1e-8
         left = ip.copy() - array([eps,0,0,0])
         right = ip.copy() + array([eps,0,0,0])
-        left2= ip.copy() + array([0,eps,0,0])
-        right2 = ip.copy() - array([0,eps,0,0])
-        left3= ip.copy() + array([0,0,eps,0])
-        right3 = ip.copy() - array([0,0,eps,0])
-        left4= ip.copy() + array([0,0,0,eps])
-        right4 = ip.copy() - array([0,0,0,eps])
+        left2= ip.copy() - array([0,eps,0,0])
+        right2 = ip.copy() + array([0,eps,0,0])
+        left3= ip.copy() - array([0,0,eps,0])
+        right3 = ip.copy() + array([0,0,eps,0])
+        left4= ip.copy() - array([0,0,0,eps])
+        right4 = ip.copy() + array([0,0,0,eps])
         return array([(self._evaluate_id(right) - self._evaluate_id(left))/(2*eps), 
                       (self._evaluate_id(right2) - self._evaluate_id(left2))/(2*eps),
                       (self._evaluate_id(right3) - self._evaluate_id(left3))/(2*eps),
@@ -76,21 +76,21 @@ class P1_Tesserakt_FE(TesseraktFE,Lagrange_FE):
         x, y, z, w = ip
         return np.array([
             (1-x)*(1-y)*(1-z)*(1-w),
-            x*(1-y)*(1-z)*(1-w),
-            (1-x)*y*(1-z)*(1-w),
-            x*y*(1-z)*(1-w),
-            (1-x)*(1-y)*z*(1-w),
-            x*(1-y)*z*(1-w),
-            (1-x)*y*z*(1-w),
-            x*y*z*(1-w),
-            (1-x)*(1-y)*(1-z)*w,
-            x*(1-y)*(1-z)*w,
-            (1-x)*y*(1-z)*w,
-            x*y*(1-z)*w,
-            (1-x)*(1-y)*z*w,
-            x*(1-y)*z*w,
-            (1-x)*y*z*w,
-            x*y*z*w
+                x*(1-y)*(1-z)*(1-w),
+            (1-x)*    y*(1-z)*(1-w),
+                x*    y*(1-z)*(1-w),
+            (1-x)*(1-y)*    z*(1-w),
+                x*(1-y)*    z*(1-w),
+            (1-x)*    y*    z*(1-w),
+                x*    y*    z*(1-w),
+            (1-x)*(1-y)*(1-z)*   w,
+                x*(1-y)*(1-z)*   w,
+            (1-x)*    y*(1-z)*   w,
+                x*    y*(1-z)*   w,
+            (1-x)*(1-y)*    z*   w,
+                x*(1-y)*    z*   w,
+            (1-x)*    y*    z*   w,
+                x*    y*    z*   w
         ])
 
 

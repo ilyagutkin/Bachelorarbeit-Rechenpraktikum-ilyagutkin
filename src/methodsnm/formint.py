@@ -110,15 +110,15 @@ class TimeIntegral(BilinearFormIntegral):
             if fe_test.eltype != fe_trial.eltype:
                 raise Exception("Finite elements must have the same el. type")
             intrule = select_integration_rule(fe_test.order + fe_trial.order, fe_test.eltype)
-        shapes_test = fe_test.evaluate(intrule.nodes, deriv =True)
-        shapes_trial = fe_trial.evaluate(intrule.nodes)
+        shapes_trial = fe_test.evaluate(intrule.nodes, deriv =True)
+        shapes_test = fe_trial.evaluate(intrule.nodes)
         coeffs = self.coeff.evaluate(intrule.nodes, trafo)
         F = trafo.jacobian(intrule.nodes)
         adetF = array([abs(det(F[i,:,:])) for i in range(F.shape[0])])
         invF = array([inv(F[i,:,:].T) for i in range(F.shape[0])])
-        w = einsum("nij,njb->nib", invF, shapes_test) 
-        dt = w[:, -1,:]  
-        ret = einsum("ij,ik,i,i,i->jk", dt, shapes_trial, adetF, coeffs, intrule.weights)
+        w = einsum("nij,njb->nib", invF, shapes_trial) 
+        dt_trial = w[:, -1,:]  
+        ret = einsum("ij,ik,i,i,i->kj", dt_trial, shapes_test, adetF, coeffs, intrule.weights)
         return ret
 
 
