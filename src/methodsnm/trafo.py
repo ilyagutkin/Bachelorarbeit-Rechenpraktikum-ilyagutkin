@@ -132,3 +132,39 @@ class TesseraktTransformation(ElementTransformation):
 
     def _jacobian(self,ip):
         return self.jac
+
+class HypertriangleTransformation(ElementTransformation):
+    points = None
+    def calculate_jacobian(self):
+        a,b,c = self.points
+        return array([b-a,c-a]).T
+
+    def __init__(self, mesh_or_points, elnr=None):
+        if isinstance(mesh_or_points, Mesh):
+            mesh = mesh_or_points
+            if elnr is None:
+                raise ValueError("HypertriangleTransformation needs an element number")
+            super().__init__(mesh, elnr)
+            self.points = tuple(mesh.points[mesh.elements()[elnr]])
+        else:
+            super().__init__(mesh = None, elnr = -1)
+            self.points = mesh_or_points
+        self.jac = self.calculate_jacobian()
+        self.dim_range = 4
+        self.dim_domain = 4
+        self.eltype = "hypertriangle"
+        
+    def calculate_jacobian(self):
+        a, b, c, d, e = self.points
+        # Jacobi-Matrix: Spaltenvektoren von (b-a), (c-a), (d-a), (e-a)
+        return np.column_stack([b - a, c - a, d - a, e - a])  # Shape (4, 4)
+
+    def _map(self, ip):
+        """Mappt ip ∈ Referenzsimplex (z. B. baryzentrisch) in echten 4D-Raum"""
+        a, b, c, d, e = self.points
+        ξ1, ξ2, ξ3, ξ4 = ip
+        return a + (b - a)*ξ1 + (c - a)*ξ2 + (d - a)*ξ3 + (e - a)*ξ4
+
+    def _jacobian(self, ip):
+        """Affine Transformation ⇒ Jacobi-Matrix ist konstant"""
+        return self.jac

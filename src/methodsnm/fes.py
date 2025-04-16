@@ -263,4 +263,17 @@ class P1_Tesserakt_Space(FESpace):
     def _element_dofs(self, elnr):
         return self.mesh.elements()[elnr]
 
+class P1_Hypertriangle_Space(FESpace):
+    """
+    This class represents a P1 Hypertriangle finite element space.
+    """
+    def __init__(self, mesh):
+        self.ndof = len(mesh.points)
+        self.mesh = mesh
+        self.fe = P1_Hypertriangle_FE()
 
+    def _finite_element(self,elnr):
+        return self.fe
+
+    def _element_dofs(self, elnr):
+        return self.mesh.elements()[elnr]

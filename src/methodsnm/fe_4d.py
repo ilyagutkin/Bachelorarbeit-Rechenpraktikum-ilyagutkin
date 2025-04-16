@@ -96,3 +96,51 @@ class P1_Tesserakt_FE(TesseraktFE,Lagrange_FE):
 
     def __str__(self):
         return "P1 Tesserakt Finite Element"
+    
+
+class TriangleFE(FE_4D):
+    """
+    Abstract base class for finite elements on triangles.
+    """    
+
+    def __init__(self):
+        super().__init__()
+        self.eltype = "hypertriangle"
+
+    @abstractmethod
+    def _evaluate_id(self, ip):
+        raise Exception("Not implemented - Base class should not be used") 
+
+class P1_Hypertriangle_FE(TriangleFE,Lagrange_FE):
+    """
+    Linear (P1) finite element on the reference 4D simplex.
+    """
+    ndof = 5
+    order = 1
+
+    def __init__(self):
+        # Knoten: die 5 Ecken des 4D-Simplex
+        self.nodes = [
+            np.array([0.0, 0.0, 0.0, 0.0]),
+            np.array([1.0, 0.0, 0.0, 0.0]),
+            np.array([0.0, 1.0, 0.0, 0.0]),
+            np.array([0.0, 0.0, 1.0, 0.0]),
+            np.array([0.0, 0.0, 0.0, 1.0]),
+        ]
+
+    def _evaluate_id(self, ip):
+        """
+        Evaluates the P1 basis functions at a given point inside the reference 4-simplex.
+
+        Parameters:
+            ip (np.ndarray): Point in 4D simplex (length 4)
+
+        Returns:
+            np.ndarray: Vector of length 5 (values of basis functions)
+        """
+        x0, x1, x2, x3 = ip
+        lamb = [1 - x0 - x1 - x2 - x3, x0, x1, x2, x3]
+        return np.array(lamb)
+
+    def __str__(self):
+        return "P1 4D-Simplex Finite Element"  
