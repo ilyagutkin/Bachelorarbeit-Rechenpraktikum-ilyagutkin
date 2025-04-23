@@ -19,7 +19,7 @@ class IntRule:
 
 from methodsnm.intrule_1d import MidPointRule, NewtonCotesRule, NP_GaussLegendreRule
 from methodsnm.intrule_2d import EdgeMidPointRule, DuffyBasedRule
-from methodsnm.intrule_4d import EdgeMidPointRule4D , IntRule4D
+from methodsnm.intrule_4d import EdgeMidPointRule4D , IntRule4D , IntRulePentatope 
 npgauss_warned = False
 def select_integration_rule(order, eltype):
     global npgauss_warned
@@ -37,6 +37,9 @@ def select_integration_rule(order, eltype):
             return EdgeMidPointRule()
         else:
             return DuffyBasedRule(order)
+        
+    elif eltype == "hypertriangle":
+        return IntRulePentatope(order)
         
     elif eltype == "tesserakt":
         return IntRule4D(order)

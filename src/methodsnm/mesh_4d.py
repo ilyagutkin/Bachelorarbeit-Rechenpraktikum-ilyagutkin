@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 from numpy import array
 from netgen.csg import CSGeometry, OrthoBrick
-from ngsolve import VOL, Mesh as NGSMesh
+from ngsolve import VOL, BND, Mesh as NGSMesh
 from methodsnm.mesh import Mesh
 from methodsnm.trafo import TesseraktTransformation , HypertriangleTransformation
 
@@ -146,21 +146,32 @@ class UnstructuredHypertriangleMesh(Mesh4D):
             ngmesh = self.generate_3d_mesh()
         super().__init__()
         nv = ngmesh.nv
-        self.vertices = np.arange(T*nv)
+        self.vertices = np.arange((T+1)*nv)
         self.hypercells = np.array([[t*nv+el.vertices[0].nr, t*nv+el.vertices[1].nr, t*nv+el.vertices[2].nr, t*nv+el.vertices[3].nr, (t+1)*nv+el.vertices[3].nr] for el in ngmesh.Elements(VOL) for t in range(T)]
-                                   +[[t*nv+el.vertices[0].nr, t*nv+el.vertices[1].nr, t*nv+el.vertices[2].nr, (t+1)*nv+el.vertices[3].nr, (t+1)*nv+el.vertices[3].nr] for el in ngmesh.Elements(VOL) for t in range(T)]
-                                   +[[t*nv+el.vertices[0].nr, t*nv+el.vertices[1].nr, (t+1)*nv+el.vertices[2].nr, (t+1)*nv+el.vertices[3].nr, (t+1)*nv+el.vertices[3].nr] for el in ngmesh.Elements(VOL) for t in range(T)]
-                                   +[[t*nv+el.vertices[0].nr, (t+1)*nv+el.vertices[1].nr, (t+1)*nv+el.vertices[2].nr, (t+1)*nv+el.vertices[3].nr, (t+1)*nv+el.vertices[3].nr] for el in ngmesh.Elements(VOL) for t in range(T)]
+                                   +[[t*nv+el.vertices[0].nr, t*nv+el.vertices[1].nr, t*nv+el.vertices[2].nr, (t+1)*nv+el.vertices[2].nr, (t+1)*nv+el.vertices[3].nr] for el in ngmesh.Elements(VOL) for t in range(T)]
+                                   +[[t*nv+el.vertices[0].nr, t*nv+el.vertices[1].nr, (t+1)*nv+el.vertices[1].nr, (t+1)*nv+el.vertices[2].nr, (t+1)*nv+el.vertices[3].nr] for el in ngmesh.Elements(VOL) for t in range(T)]
+                                   +[[t*nv+el.vertices[0].nr, (t+1)*nv+el.vertices[0].nr, (t+1)*nv+el.vertices[1].nr, (t+1)*nv+el.vertices[2].nr, (t+1)*nv+el.vertices[3].nr] for el in ngmesh.Elements(VOL) for t in range(T)]
                                    , dtype=int)
         
-        vertex_indices = set()
+        vertex_indices = [None] *((T+1)*nv +1)
 
         for el in ngmesh.Elements(VOL):
             for v in el.vertices:
-                vertex_indices.add(ngmesh[v].point)
+                    p = ngmesh[v].point
+                    nr = v.nr
+                    if vertex_indices[nr] is None:
+                        vertex_indices[nr] = (p[0], p[1], p[2])
 
-        self.points = np.array([np.append(p, t/T)for t in range(T+1)for p in vertex_indices])
-    
+        self.points = np.array([np.append(p, t/T)for t in range(T+1)for p in vertex_indices if p is not None])
+
+        boundary_vertices = list(dict.fromkeys(v.nr for el in ngmesh.Elements(BND) for v in el.vertices))
+        boundary_vertices = list(dict.fromkeys(boundary_vertices))
+        main_list = [t*nv+v for t in range(T) for v in boundary_vertices]
+        first = list(range(nv))
+        last = self.vertices[-nv:].tolist()
+        self.bndry_vertices = np.array(list(set(main_list + first + last)))
+
+
     def trafo(self, elnr, codim=0, bndry=False):
         if codim > 0 or bndry:
             raise NotImplementedError("Not implemented yet")

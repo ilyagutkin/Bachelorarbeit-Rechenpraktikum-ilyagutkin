@@ -112,6 +112,8 @@ class TriangleFE(FE_4D):
         raise Exception("Not implemented - Base class should not be used") 
 
 class P1_Hypertriangle_FE(TriangleFE,Lagrange_FE):
+    def _evaluate_deriv(self, ip):
+        return super()._evaluate_deriv(ip)
     """
     Linear (P1) finite element on the reference 4D simplex.
     """
@@ -119,6 +121,7 @@ class P1_Hypertriangle_FE(TriangleFE,Lagrange_FE):
     order = 1
 
     def __init__(self):
+        super().__init__()
         # Knoten: die 5 Ecken des 4D-Simplex
         self.nodes = [
             np.array([0.0, 0.0, 0.0, 0.0]),

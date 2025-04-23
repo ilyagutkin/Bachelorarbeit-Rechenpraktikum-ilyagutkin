@@ -72,8 +72,8 @@ class FEFunction(MeshFunction):
         """
         Sets the values of the finite element function to f.
         """
-        if str(self.fes.fe) not in ["P1 Triangle Finite Element","P1 Tesserakt Finite Element"]:
-            raise Exception("Only P1 triangle finite element,P1 Tesserakt Finite Element is supported")
+        if str(self.fes.fe) not in ["P1 Triangle Finite Element","P1 Tesserakt Finite Element","P1 4D-Simplex Finite Element"]:
+            raise Exception("Only P1 triangle finite element,P1 Tesserakt Finite Element,P1 4D-Simplex Finite Element is supported")
         if boundary:
             for dof in self.mesh.bndry_vertices:
                 x = self.mesh.points[dof]
