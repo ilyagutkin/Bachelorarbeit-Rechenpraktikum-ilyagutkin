@@ -1,36 +1,39 @@
 from numpy import *
 from ngsolve import *
 from netgen.geom2d import SplineGeometry
+import netgen.gui
+
 from ngsolve.webgui import Draw
 from netgen.occ import *
 from tabulate import tabulate
 import pandas as pd
 import numpy as np
 
-def CG_solver(mesh,order,w,eps):
+def CG_solver(mesh,order,w,eps,f=0,u0=0):
     fes = H1(mesh, order=order, dirichlet="bottom|right|left")
     u,v = fes.TnT()
     n = specialcf.normal(2)
-    Au = CoefficientFunction((grad(u)[0],0))
+    ux = CoefficientFunction((grad(u)[0]))
     B = CoefficientFunction((w,1))
     a = BilinearForm(fes, symmetric=False)
-    a += Au*grad(v)*dx 
+    a += eps*ux*grad(v)[0]*dx 
     a += (B*grad(u))*v*dx
     a.Assemble()
 
+    f1 = CF(f)
     f = LinearForm(fes)
-    f += 0*v*dx
+    f += f1*v*dx
     f.Assemble()
 
     gfu = GridFunction(fes)
-    gfu.Set(exp(w*x/2)*sin(pi*x),BND)  # initial condition
+    gfu.Set(u0,BND)  # initial condition
 
     res = f.vec.CreateVector()
     res.data = f.vec - a.mat * gfu.vec
     gfu.vec.data += a.mat.Inverse(fes.FreeDofs()) * res
     return(gfu)
 
-def DG_solver(mesh,order,w,eps):
+def DG_solver(mesh,order,w,eps,f=0,u0=0):
     fes = L2(mesh, order=order, dgjumps=True)
     u,v = fes.TnT()
     lam = 2
@@ -43,29 +46,32 @@ def DG_solver(mesh,order,w,eps):
     avgu = 0.5*n[0] * (grad(u)[0]+grad(u.Other())[0])
     avgv= 0.5*n[0] * (grad(v)[0]+grad(v.Other())[0])
 
-    Au = CoefficientFunction((grad(u)[0],0))
+    ux = CoefficientFunction((grad(u)[0]))
     B = CoefficientFunction((w,1))
 
-    diff = Au*grad(v)*dx # diffusion term
-    diff += -avgu * jump_v *dS #term from the partial integration
-    #diff += (B*grad(u))*v*dx # time derivative term + convectionterm
-    diff += -(n[0]*grad(u)[0]*v)* ds(skeleton=True) #term from the partial integration
-    diff += lam*order**2/h*u*v * ds(skeleton=True) # penalty term
-    diff += lam*order**2/h*jump_u*jump_v*dS # penalty term
+    diff = eps*ux*grad(v)[0]*dx # diffusion term
+    diff += -eps*avgu * jump_v *dS #term from the partial integration
+
+    diff += -eps*(n[0]*grad(u)[0]*v)* ds(skeleton=True) #term from the partial integration
+    diff += lam*eps/h *u*v * ds(skeleton=True) # penalty term
+    diff += lam*eps/h *jump_u*jump_v*dS # penalty term
+
     uhat = IfPos(B*n, u, u.Other())
     con = -B*grad(v)*u*dx
     con += (B*n)*uhat *jump_v*dS
     diffcon = BilinearForm(diff + con).Assemble()
     
+    f1 = CF((f))
     f = LinearForm(fes)
-    f += lam*order**2/h*exp(w*x/2)*sin(pi*x)*v*ds(skeleton=True, definedon=mesh.Boundaries("bottom"))#weakly impose boundary condition
+    f += f1*v*dx
+    f += lam*eps/h *u0*v*ds(skeleton=True, definedon=mesh.Boundaries("bottom|right|left"))#weakly impose boundary condition
     f.Assemble()
 
     gfu = GridFunction(fes)
     gfu.vec.data += diffcon.mat.Inverse(fes.FreeDofs()) * f.vec
     return gfu
 
-def SUPG_solver(mesh,order,w,eps):
+def SUPG_solver(mesh,order,w,eps,f=0,u0=0):
     fes = H1(mesh, order=order, dirichlet="bottom|right|left")
     u,v = fes.TnT()
     n = specialcf.normal(2)
@@ -75,9 +81,7 @@ def SUPG_solver(mesh,order,w,eps):
     diffusion = eps
 
     gamma_0 = 1
-    #gamma_T = gamma_0 * h**2 / (w * order**2)
     gamma_T = gamma_0 * h / sqrt(w**2 + Cinv * diffusion)
-    #gamma_T = 0
 
     ws = CF((w,1))
 
@@ -89,17 +93,58 @@ def SUPG_solver(mesh,order,w,eps):
     uxx = u.Operator("hesse")[0,0]
 
     a = BilinearForm(fes, symmetric=False)
-    a += gradx(u)*gradx(v)*dx + (ws*grad(u))*v*dx
+    a += eps*gradx(u)*gradx(v)*dx + (ws*grad(u))*v*dx
     a += gamma_T * (-uxx + ws * grad(u))*(ws* grad(v)) * dx
     a.Assemble()
 
+    f1 = CF((f))
     f = LinearForm(fes)
-    f += 0*v*dx
+    f += f1*v*dx
     f.Assemble()
 
     gfu = GridFunction(fes)
-    gfu.Set(exp(w*x/2)*sin(pi*x),BND)  # initial condition
-    Draw(gfu)
+    gfu.Set(u0,BND)  # initial condition
+
+    res = f.vec.CreateVector()
+    res.data = f.vec - a.mat * gfu.vec
+    gfu.vec.data += a.mat.Inverse(fes.FreeDofs()) * res
+    return(gfu)
+
+def SUPG_solver_paper(mesh,order,w,eps,f=0,u0=0):
+    order = order
+    fes = H1(mesh, order=order, dirichlet="bottom|right|left")
+    u,v = fes.TnT()
+    n = specialcf.normal(2)
+    h = specialcf.mesh_size
+    jac = specialcf.JacobianMatrix(mesh.dim)
+    M = CF( [[2/sqrt(3), 1/sqrt(3)], [1/sqrt(3), 2/sqrt(3)]] )
+    expr = jac.trans * M * jac
+    Cinv = 36 *order**2 # depends on order in general
+
+    ws = CF((w,1))
+    tau =  InnerProduct(ws,expr *ws)
+
+    gamma_T = 1/sqrt(tau + (Cinv*eps/h**2)**2)
+
+    def gradx(u):
+        return grad(u)[0]
+    def dt(u):
+        return grad(u)[1]
+
+    uxx = u.Operator("hesse")[0,0]
+
+    a = BilinearForm(fes, symmetric=False)
+    a += eps*gradx(u)*gradx(v)*dx + (ws*grad(u))*v*dx
+    a += gamma_T * (-eps*uxx + ws * grad(u))*(ws* grad(v)) * dx
+    a.Assemble()
+
+    f1 = CF(f)
+    f = LinearForm(fes)
+    f += f1*v*dx
+    f.Assemble()
+
+    gfu = GridFunction(fes)
+    gfu.Set(u0,BND)  # initial condition
 
     res = f.vec.CreateVector()
     res.data = f.vec - a.mat * gfu.vec
@@ -147,10 +192,15 @@ def generate_mesh(x_steps=5,y_steps=5):
             Meshes.append(mesh1)
     return Meshes
 
-Solver =[CG_solver, DG_solver, SUPG_solver]
+Solver =[CG_solver, DG_solver, SUPG_solver, SUPG_solver_paper]
 w = 1
-eps =1
-Meshes = generate_mesh(5,5)
+eps = 0.001
+#f = ((eps*pi**2-1)*sin(pi*x)+pi*cos(pi*x))*exp(-y)
+#u0 = sin(pi*x)
+phi = (1 - exp((x - 1)/eps)) / (1 - exp(-1/eps))
+f = -phi  * exp(-y)
+uexact = phi * exp(-y)  # y = Zeit#uexact = sin(pi*x)*exp(-y)
+Meshes = generate_mesh(3,3)
 
 df1 = pd.DataFrame(Meshes)
 # Extrahiere die ersten und zweiten Werte der Tupel in separate Listen
@@ -159,14 +209,15 @@ second_values = [[item[2] for item in row] for row in df1.values]
 deltat = [np.mean(row) for row in first_values] 
 deltax= [np.mean(col) for col in zip(*second_values)] 
 
-for order in range(3):
+
+for order in range(1,5):
     for solver in Solver:
         L2fehler = zeros((len(Meshes),len(Meshes[0])))
         for i in range(len(Meshes)):
             for j in range(len(Meshes[i])):
                 mesh = Meshes[i][j]
-                gfu = solver(mesh[0],order,w,eps)
-                L2fehler[i][j] = sqrt(Integrate((gfu-(sin(pi*x)*exp(-(pi**2+w**2/4)*y)*exp(w*x/2)))**2, mesh[0]))
+                gfu = solver(mesh[0],order,w,eps,f,uexact)
+                L2fehler[i][j] = sqrt(Integrate((gfu-uexact)**2, mesh[0]))
                 #print(f"Methode: {solver.__name__} , order ={order} L2 Fehler: {L2fehler} max_y ={mesh[1]} max_x={mesh[2]}" )
         #print(tabulate(L2fehler, tablefmt="grid"))  
         df = pd.DataFrame(L2fehler, columns = deltax, index = deltat)
