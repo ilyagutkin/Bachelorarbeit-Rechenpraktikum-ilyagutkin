@@ -30,6 +30,7 @@ class StructuredRectangleMesh(Mesh2D):
                                                                           for j in range(N)] \
                            +[[i+(j+1)*M, offset+i+j*M, M*(N+1)+j+(i+1)*N] for i in range(M) 
                                                                           for j in range(N)], dtype=int)
+        self.special_meshsize = np.sqrt(1/M**2 +1/N**2)
 
     def filter_bndry_points(self ,extreme_type, index):
         points = self.points[self.bndry_vertices]

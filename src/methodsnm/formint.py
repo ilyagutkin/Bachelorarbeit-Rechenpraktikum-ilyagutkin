@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import numpy as np
+from numpy import sqrt
 from numpy import array, einsum
 from methodsnm.intrule import *
 from methodsnm.fe import *
@@ -33,6 +34,41 @@ class SourceIntegral(LinearFormIntegral):
         coeffs = self.coeff.evaluate(intrule.nodes, trafo)
         weights = [w*c*abs(det(trafo.jacobian(ip))) for ip,w,c in zip(intrule.nodes,intrule.weights,coeffs)]
         return np.dot(shapes.T, weights)
+    
+class SUPGSourceIntegral(LinearFormIntegral):
+    def __init__(self, f=ConstantFunction(np.ones(1)),wind=None):
+        self.coeff = f
+        self.wind = wind
+
+    def compute_element_vector(self, fe, trafo, intrule=None):
+        if intrule is None:
+            intrule = select_integration_rule(2*fe.order, fe.eltype)
+        if trafo.mesh.dimension == 2:
+            M = np.array([[2/sqrt(3), 1/sqrt(3)], [1/sqrt(3), 2/sqrt(3)]])
+        elif trafo.mesh.dimension == 4:
+            M = 5 **-1/4*np.array([
+    [2, 1, 1, 1],
+    [1, 2, 1, 1],
+    [1, 1, 2, 1],
+    [1, 1, 1, 2]])
+        h = trafo.mesh.special_meshsize
+        shapes = fe.evaluate(intrule.nodes,deriv=True)
+        F = trafo.jacobian(intrule.nodes)
+        invF = array([inv(F[i,:,:].T) for i in range(F.shape[0])])
+        adetF = array([abs(det(F[i,:,:])) for i in range(F.shape[0])])
+        wind = self.wind.evaluate(intrule.nodes, trafo)
+        f = self.coeff.evaluate(intrule.nodes, trafo)
+
+        tmp = np.einsum("nij,jk->nik", invF, M)
+        expr = np.einsum("nij,nkj->nik", tmp, invF)
+        tau = np.einsum("ni,nij,nj->n", wind, expr, wind)
+        gamma_T = 1 / np.sqrt(tau + (36 / h)**2)
+
+        w = einsum("nij,njb->nib", invF, shapes) 
+        conv = np.einsum("nd,ndi->ni", wind, w)
+
+        scale = gamma_T * adetF * intrule.weights
+        return np.einsum("n,n,nj->j", scale , f , conv )
 
 class BilinearFormIntegral(FormIntegral):
 
@@ -130,6 +166,64 @@ class TimeIntegral(BilinearFormIntegral):
         ret = einsum("ij,ik,i,i,i->kj", dt_trial, shapes_test, adetF, coeffs, intrule.weights)
         return ret
 
+class ConvectionIntegral(BilinearFormIntegral):
+    def __init__(self, coeff=ConstantFunction(np.ones(1))):
+        self.coeff = coeff
 
+    def compute_element_matrix(self, fe_test, fe_trial, trafo, intrule=None):
+        if intrule is None:
+            if fe_test.eltype != fe_trial.eltype:
+                raise Exception("Finite elements must have the same el. type")
+            intrule = select_integration_rule(fe_test.order + fe_trial.order, fe_test.eltype)
+        shapes_test = fe_test.evaluate(intrule.nodes)
+        shapes_trial = fe_trial.evaluate(intrule.nodes, deriv=True)
+        F = trafo.jacobian(intrule.nodes)
+        invF = array([inv(F[i,:,:].T) for i in range(F.shape[0])])
+        adetF = array([abs(det(F[i,:,:])) for i in range(F.shape[0])])
+        wind = self.coeff.evaluate(intrule.nodes, trafo)
+
+        w = einsum("nij,njb->nib", invF, shapes_trial) 
+        conv = np.einsum("nd,ndi->ni", wind, w)
+
+        ret = einsum("ij,ik,i,i->kj", conv , shapes_test, adetF, intrule.weights)
+        return ret
    
+class SUPGIntegral(BilinearFormIntegral):
+    def __init__(self, coeff=ConstantFunction(np.ones(1))):
+        self.coeff = coeff
 
+    def compute_element_matrix(self, fe_test, fe_trial, trafo, intrule=None):
+        if intrule is None:
+            if fe_test.eltype != fe_trial.eltype:
+                raise Exception("Finite elements must have the same el. type")
+            intrule = select_integration_rule(fe_test.order + fe_trial.order, fe_test.eltype)
+        if trafo.mesh.dimension == 2:
+            M = np.array([[2/sqrt(3), 1/sqrt(3)], [1/sqrt(3), 2/sqrt(3)]])
+        elif trafo.mesh.dimension == 4:
+            M = 5 **-1/4*np.array([
+    [2, 1, 1, 1],
+    [1, 2, 1, 1],
+    [1, 1, 2, 1],
+    [1, 1, 1, 2]])
+        h = trafo.mesh.special_meshsize
+        shapes_test = fe_test.evaluate(intrule.nodes, deriv=True)
+        shapes_trial = fe_trial.evaluate(intrule.nodes, deriv=True)
+        F = trafo.jacobian(intrule.nodes)
+        invF = array([inv(F[i,:,:].T) for i in range(F.shape[0])])
+        adetF = array([abs(det(F[i,:,:])) for i in range(F.shape[0])])
+        wind = self.coeff.evaluate(intrule.nodes, trafo)
+
+        tmp = np.einsum("nij,jk->nik", invF, M)
+        expr = np.einsum("nij,nkj->nik", tmp, invF)
+        tau = np.einsum("ni,nij,nj->n", wind, expr, wind)
+        gamma_T = 1 / np.sqrt(tau + (36 / h)**2)
+
+        grad_u_phys = np.einsum("nij,njb->nib", invF, shapes_trial)
+        grad_v_phys = np.einsum("nij,njb->nib", invF, shapes_test)
+
+        wind_grad_u = np.einsum("nd,ndi->ni", wind, grad_u_phys)
+        wind_grad_v = np.einsum("nd,ndi->ni", wind, grad_v_phys)
+
+        scale = gamma_T * adetF * intrule.weights  # (n,)
+        ret = np.einsum("n,ni,nj->ij", scale, wind_grad_u, wind_grad_v)
+        return ret

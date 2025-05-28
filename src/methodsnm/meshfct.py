@@ -86,3 +86,34 @@ class FEFunction(MeshFunction):
             for dof in bndry:
                 x = self.mesh.points[dof]
                 self.vector[dof] = f(x)   
+
+class VectorFunction(MeshFunction):
+    """
+    Abstract base class for vector-valued functions defined on a mesh.
+    """
+    def _evaluate(self, ip, trafo):
+        raise Exception("Not implemented - Base class for vector functions")
+
+    def _evaluate_array(self, ips, trafo):
+        ret = np.empty((ips.shape[0], *self.value_shape))
+        for i in range(ips.shape[0]):
+            ret[i] = self.evaluate(ips[i], trafo)
+        return ret
+
+    def evaluate(self, ip, trafo):
+        if isinstance(ip, np.ndarray):
+            if ip.ndim == 1:
+                return self._evaluate(ip, trafo)
+            else:
+                return self._evaluate_array(ip, trafo)
+        else:
+            raise Exception("Invalid input")
+
+class ConstantVectorFunction(VectorFunction):
+    def __init__(self, vec, mesh=None):
+        self.mesh = mesh
+        self.vec = np.array(vec)
+        self.value_shape = self.vec.shape  # wichtig für evaluate_array
+
+    def _evaluate(self, ip, trafo):
+        return self.vec
