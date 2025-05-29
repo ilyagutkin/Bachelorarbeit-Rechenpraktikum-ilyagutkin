@@ -108,6 +108,7 @@ class StructuredTesseraktMesh(Mesh4D):
         self.ylength = N    
         self.zlength = K
         self.tlength = L
+        self.special_meshsize = 1/min(M,N,K,L)
 
     def filter_bndry_points(self ,extreme_type, index):
         points = self.points[self.bndry_vertices]
@@ -170,7 +171,9 @@ class UnstructuredHypertriangleMesh(Mesh4D):
         first = list(range(nv))
         last = self.vertices[-nv:].tolist()
         self.bndry_vertices = np.array(list(set(main_list + first + last)))
-
+        self.special_meshsize = 1/T
+        self.initial_bndry_vertices = first
+        self.top_bndry_vertices = last
 
     def trafo(self, elnr, codim=0, bndry=False):
         if codim > 0 or bndry:
