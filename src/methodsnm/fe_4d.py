@@ -60,7 +60,12 @@ class P1_Tesserakt_FE(TesseraktFE,Lagrange_FE):
     order = 1
     def __init__(self):
         super().__init__()
-        self.nodes = [np.array([x, y, z, w]) for x in [0, 1] for y in [0, 1] for z in [0, 1] for w in [0, 1]]
+        self.nodes = []
+        for l in [0,1]:
+            for k in [0,1]:
+                for j in [0,1]:
+                    for i in [0,1]:
+                        self.nodes.append(np.array([i,j,k,l]))
 
     def _evaluate_id(self, ip):
         """
@@ -92,6 +97,40 @@ class P1_Tesserakt_FE(TesseraktFE,Lagrange_FE):
             (1-x)*    y*    z*   w,
                 x*    y*    z*   w
         ])
+    
+    def _evaluate_deriv(self, ip):
+        x, y, z, w = ip
+
+        B = [
+            [1-x, 1-y, 1-z, 1-w],   # B0(t) = 1 - t
+            [  x,   y,   z,   w]    # B1(t) = t
+        ]
+
+        dB = [
+            [-1, -1, -1, -1],   # B0'(t) = -1
+            [ 1,  1,  1,  1]     # B1'(t) = +1
+        ]
+
+        grads = np.zeros((4, 16))
+        idx = 0
+        for i in [0,1]:
+            for j in [0,1]:
+                for k in [0,1]:
+                    for l in [0,1]:
+                        # phi = B_i(x) B_j(y) B_k(z) B_l(w)
+                        # derivative wrt x:
+                        grads[0, idx] = dB[i][0] * B[j][1] * B[k][2] * B[l][3]
+                        # derivative wrt y:
+                        grads[1, idx] = B[i][0] * dB[j][1] * B[k][2] * B[l][3]
+                        # derivative wrt z:
+                        grads[2, idx] = B[i][0] * B[j][1] * dB[k][2] * B[l][3]
+                        # derivative wrt w:
+                        grads[3, idx] = B[i][0] * B[j][1] * B[k][2] * dB[l][3]
+
+                        idx += 1
+
+        return grads
+
 
 
     def __str__(self):
@@ -112,8 +151,6 @@ class TriangleFE(FE_4D):
         raise Exception("Not implemented - Base class should not be used") 
 
 class P1_Hypertriangle_FE(TriangleFE,Lagrange_FE):
-    def _evaluate_deriv(self, ip):
-        return super()._evaluate_deriv(ip)
     """
     Linear (P1) finite element on the reference 4D simplex.
     """
@@ -144,6 +181,114 @@ class P1_Hypertriangle_FE(TriangleFE,Lagrange_FE):
         x0, x1, x2, x3 = ip
         lamb = [1 - x0 - x1 - x2 - x3, x0, x1, x2, x3]
         return np.array(lamb)
+    
+    def _evaluate_deriv(self, ip):
+        """
+        Returns the gradients of the 5 P1 shape functions on the reference 4-simplex.
+
+        Output shape: (4, 5)
+        grads[:, i] = ∇φ_i
+        """
+
+        # Gradients in the 4D REFERENCE simplex
+        grads_ref = np.array([
+            [-1.0, -1.0, -1.0, -1.0],  # grad φ0
+            [ 1.0,  0.0,  0.0,  0.0],  # grad φ1
+            [ 0.0,  1.0,  0.0,  0.0],  # grad φ2
+            [ 0.0,  0.0,  1.0,  0.0],  # grad φ3
+            [ 0.0,  0.0,  0.0,  1.0],  # grad φ4
+        ]).T   # shape -> (4,5)
+
+        return grads_ref
+
 
     def __str__(self):
         return "P1 4D-Simplex Finite Element"  
+    
+class P2_Hypertriangle_FE(TriangleFE, Lagrange_FE):
+    """
+    Quadratic (P2) Lagrange element on the reference 4D simplex.
+    Nodes: 5 vertices + 10 edge midpoints.
+    """
+    ndof = 15
+    order = 2
+
+    def __init__(self):
+        super().__init__()
+        # vertices of reference 4-simplex
+        v0 = np.array([0.0, 0.0, 0.0, 0.0])
+        v1 = np.array([1.0, 0.0, 0.0, 0.0])
+        v2 = np.array([0.0, 1.0, 0.0, 0.0])
+        v3 = np.array([0.0, 0.0, 1.0, 0.0])
+        v4 = np.array([0.0, 0.0, 0.0, 1.0])
+
+        self.vertices = [v0, v1, v2, v3, v4]
+
+        # edge list in terms of vertex indices
+        self.edge_pairs = [
+            (0, 1), (0, 2), (0, 3), (0, 4),
+            (1, 2), (1, 3), (1, 4),
+            (2, 3), (2, 4),
+            (3, 4),
+        ]
+
+        mids = [(self.vertices[i] + self.vertices[j]) * 0.5
+                for (i, j) in self.edge_pairs]
+
+        # 5 vertex nodes + 10 edge-midpoint nodes
+        self.nodes = self.vertices + mids
+
+    def _evaluate_id(self, ip):
+        """
+        Evaluate P2 basis at point ip (x0,x1,x2,x3) in reference 4-simplex.
+        Uses barycentric coordinates lambda_0,...,lambda_4.
+        """
+        x0, x1, x2, x3 = ip
+        lamb = np.array([1.0 - x0 - x1 - x2 - x3,
+                         x0, x1, x2, x3])
+        ret = np.empty(self.ndof)
+
+        for i in range(5):
+            ret[i] = lamb[i] * (2.0 * lamb[i] - 1.0)
+
+        for k, (i, j) in enumerate(self.edge_pairs):
+            ret[5 + k] = 4.0 * lamb[i] * lamb[j]
+
+        return ret
+    
+    def _evaluate_deriv(self, ip):
+        """
+        Return derivatives of all 15 shape functions at reference point ip.
+        Output shape: (4, 15)
+        """
+        x0, x1, x2, x3 = ip
+
+        # barycentric coordinates
+        lamb = np.array([
+            1.0 - x0 - x1 - x2 - x3,
+            x0, x1, x2, x3
+        ])
+
+        # gradients of barycentric coordinates
+        grad_lamb = np.array([
+            [-1.0, -1.0, -1.0, -1.0],
+            [ 1.0,  0.0,  0.0,  0.0],
+            [ 0.0,  1.0,  0.0,  0.0],
+            [ 0.0,  0.0,  1.0,  0.0],
+            [ 0.0,  0.0,  0.0,  1.0],
+        ])  # shape (5,4)
+
+        grads = np.zeros((4, self.ndof))
+
+        # vertex dofs: φ_i = λ_i (2 λ_i - 1)
+        for i in range(5):
+            grads[:, i] = (4.0 * lamb[i] - 1.0) * grad_lamb[i]
+
+        # edge dofs: φ_ij = 4 λ_i λ_j
+        for k, (i, j) in enumerate(self.edge_pairs):
+            grads[:, 5 + k] = 4.0 * (lamb[j] * grad_lamb[i] + lamb[i] * grad_lamb[j])
+
+        return grads
+
+    def __str__(self):
+        return "P2 4D-Simplex Finite Element"

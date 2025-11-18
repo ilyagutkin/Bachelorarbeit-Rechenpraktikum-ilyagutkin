@@ -58,11 +58,11 @@ class SUPGSourceIntegral(LinearFormIntegral):
         adetF = array([abs(det(F[i,:,:])) for i in range(F.shape[0])])
         wind = self.wind.evaluate(intrule.nodes, trafo)
         f = self.coeff.evaluate(intrule.nodes, trafo)
-
+        cinv = 1
         tmp = np.einsum("nij,jk->nik", invF, M)
         expr = np.einsum("nij,nkj->nik", tmp, invF)
         tau = np.einsum("ni,nij,nj->n", wind, expr, wind)
-        gamma_T = 1 / np.sqrt(tau + (36 / h)**2)
+        gamma_T = 1 / np.sqrt(tau + (cinv / h)**2)
 
         w = einsum("nij,njb->nib", invF, shapes) 
         conv = np.einsum("nd,ndi->ni", wind, w)
@@ -112,8 +112,13 @@ class LaplaceIntegral(BilinearFormIntegral):
         F = trafo.jacobian(intrule.nodes)
         invF = array([inv(F[i,:,:]) for i in range(F.shape[0])])
         adetF = array([abs(det(F[i,:,:])) for i in range(F.shape[0])])
+        Jinv = np.array([inv(F[i, :, :].T)for i in range(F.shape[0])])
         coeffs = self.coeff.evaluate(intrule.nodes, trafo)
-        ret = einsum("ijk,imn,ijl,iml,i,i,i->kn", dshapes_ref_test, dshapes_ref_trial, invF, invF, adetF, coeffs, intrule.weights)
+        grad_test  = np.einsum("nij,njk->nik", Jinv, dshapes_ref_test)   # [n_qp, dim, n_test]
+        grad_trial = np.einsum("nij,njk->nik", Jinv, dshapes_ref_trial)  # [n_qp, dim, n_trial]
+
+        #ret = einsum("ijk,imn,ijl,iml,i,i,i->kn", dshapes_ref_test, dshapes_ref_trial, invF, invF, adetF, coeffs, intrule.weights)
+        ret = np.einsum("ijk,ijl,i,i,i->kl",grad_test, grad_trial,adetF, coeffs, intrule.weights)
         return ret
     
 class LaplaceIntegral_without_time(BilinearFormIntegral):
@@ -212,11 +217,11 @@ class SUPGIntegral(BilinearFormIntegral):
         invF = array([inv(F[i,:,:].T) for i in range(F.shape[0])])
         adetF = array([abs(det(F[i,:,:])) for i in range(F.shape[0])])
         wind = self.coeff.evaluate(intrule.nodes, trafo)
-
+        cinv =1
         tmp = np.einsum("nij,jk->nik", invF, M)
         expr = np.einsum("nij,nkj->nik", tmp, invF)
         tau = np.einsum("ni,nij,nj->n", wind, expr, wind)
-        gamma_T = 1 / np.sqrt(tau + (36 / h)**2)
+        gamma_T = 1 / np.sqrt(tau + (cinv / h)**2)
 
         grad_u_phys = np.einsum("nij,njb->nib", invF, shapes_trial)
         grad_v_phys = np.einsum("nij,njb->nib", invF, shapes_test)
@@ -227,3 +232,88 @@ class SUPGIntegral(BilinearFormIntegral):
         scale = gamma_T * adetF * intrule.weights  # (n,)
         ret = np.einsum("n,ni,nj->ij", scale, wind_grad_u, wind_grad_v)
         return ret
+
+class DivUQIntegrator(BilinearFormIntegral):
+    def __init__(self, coeff=ConstantFunction(1)):
+        self.coeff = coeff
+
+    def compute_element_matrix(self, fe_test, fe_trial, trafo, intrule=None):
+        if intrule is None:
+            if fe_test.eltype != fe_trial.eltype:
+                raise Exception("Finite elements must have same type")
+            intrule = select_integration_rule(fe_test.order + fe_trial.order,fe_test.eltype)
+
+        shapes_q = fe_test.evaluate(intrule.nodes)  # [n_qp, ndof_q]
+        shapes_u_ref = fe_trial.evaluate(intrule.nodes, deriv=True)  # [n_qp, dim, ndof_u]
+        F = trafo.jacobian(intrule.nodes)            # [n_qp, dim, dim]
+        invF = array([inv(F[i,:,:].T) for i in range(F.shape[0])])
+        adetF = array([abs(det(F[i,:,:])) for i in range(F.shape[0])])
+        weights = intrule.weights
+        grad_u = einsum("nij,njb->nib", invF, shapes_u_ref) 
+        div_u = grad_u[:, :3, :].sum(axis=1)
+        ret = einsum("ik,il,i,i->kl", shapes_q, div_u, adetF, weights)
+
+        return ret
+
+class DivVPIntegrator(BilinearFormIntegral):
+    def __init__(self, coeff=ConstantFunction(1)):
+        self.coeff = coeff
+
+    def compute_element_matrix(self, fe_test, fe_trial, trafo, intrule=None):
+        if intrule is None:
+            if fe_test.eltype != fe_trial.eltype:
+                raise Exception("Finite elements must have same type")
+            intrule = select_integration_rule(fe_test.order + fe_trial.order,fe_test.eltype)
+
+        shapes_v = fe_test.evaluate(intrule.nodes,deriv =True)  # [n_qp, ndof_v]
+        shapes_p = fe_trial.evaluate(intrule.nodes)  # [n_qp, dim, ndof_q]
+        F = trafo.jacobian(intrule.nodes)            # [n_qp, dim, dim]
+        invF = array([inv(F[i,:,:].T) for i in range(F.shape[0])])
+        adetF = array([abs(det(F[i,:,:])) for i in range(F.shape[0])])
+        weights = intrule.weights
+        grad_v = einsum("nij,njb->nib", invF, shapes_v)  # [n_qp, dim, ndof_q]
+        div_v = grad_v[:, :3, :].sum(axis=1)  # [n_qp, ndof_q]
+        ret = einsum("il,ik,i,i->lk",   div_v , shapes_p, adetF, weights)
+
+        return ret
+
+class PressureStabilizationIntegral(BilinearFormIntegral):
+    """
+    Simple pressure-gradient stabilization:
+        s(p, q) = delta * (∇p, ∇q)
+    """
+
+    def __init__(self, delta = 1.0):
+        self.delta = delta
+
+    def compute_element_matrix(self, fe_test, fe_trial, trafo, intrule=None):
+        # EXACT same structure as LaplaceIntegral_without_time, but with coeff = delta
+        if intrule is None:
+            if fe_test.eltype != fe_trial.eltype:
+                raise Exception("Finite elements must have the same el. type")
+            intrule = select_integration_rule(
+                fe_test.order + fe_trial.order,
+                fe_test.eltype
+            )
+
+        # Values / gradients of basis
+        shapes_test = fe_test.evaluate(intrule.nodes, deriv=True)   # (n_qp, dim, ndof)
+        shapes_trial = fe_trial.evaluate(intrule.nodes, deriv=True)
+
+        # Geometry
+        F = trafo.jacobian(intrule.nodes)
+        invF = array([inv(F[i,:,:].T) for i in range(F.shape[0])])
+        adetF = array([abs(det(F[i,:,:])) for i in range(F.shape[0])])
+        weights = intrule.weights
+
+        # map reference gradients to physical gradients
+        grad_test  = einsum("nij,njb->nib", invF, shapes_test)       # (n_qp, dim, ndof_test)
+        grad_trial = einsum("nij,njb->nib", invF, shapes_trial)  
+
+        # contraction: ∫ grad_test · grad_trial * |detJ| * w
+        ret = self.delta * einsum("ndk,ndl,n,n->kl",
+                                   grad_test, grad_trial, adetF, weights)
+        h = trafo.mesh.special_meshsize
+
+        return -h**2*ret
+

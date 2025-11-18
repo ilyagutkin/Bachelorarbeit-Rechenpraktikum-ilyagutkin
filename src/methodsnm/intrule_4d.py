@@ -72,8 +72,103 @@ class IntRule4D(IntRuleTesserakt):
 
         self.nodes, self.weights = IntRule4D.get_4d_integration_rule(order)
         
-import numpy as np
-from methodsnm.intrule import IntRule  # deine Basisklasse
+def _simplex_unit_volume(m: int) -> float:
+    """
+    Volumen des m-dimensionalen Unit-Simplex
+    { x_i >= 0, sum x_i <= 1 } = 1 / m!
+    """
+    v = 1.0
+    for i in range(1, m+1):
+        v /= i
+    return v
+
+
+def _compositions(n: int, k: int):
+    """
+    Generator für Kompositionen von n in k nichtnegative Teile.
+    Entspricht comp_next aus Burkardt.
+    """
+    if k == 1:
+        yield (n,)
+        return
+    for i in range(n+1):
+        for tail in _compositions(n - i, k - 1):
+            yield (i,) + tail
+
+
+def _gm_rule_size(rule: int, m: int) -> int:
+    """
+    Anzahl der Stützstellen N für GM-Rule 'rule' im m-Simplex:
+    N = C(m + rule + 1, rule)
+    """
+    from math import comb
+    return comb(m + rule + 1, rule)
+
+
+def _gm_unit_rule_set(rule: int, m: int):
+    """
+    Python-Port von gm_unit_rule_set (Burkardt) für den
+    m-dimensionalen Unit-Simplex.
+
+    Parameters
+    ----------
+    rule : int
+        GM-Index s >= 0 (Exaktheit = 2*s + 1)
+    m : int
+        Dimension
+
+    Returns
+    -------
+    w : (N,) array
+        Gewichte
+    x : (m, N) array
+        Knoten im Unit-Simplex
+    """
+    s = rule
+    d = 2 * s + 1
+    n = _gm_rule_size(rule, m)
+
+    w = np.zeros(n)
+    x = np.zeros((m, n))
+
+    k = 0
+    one_pm = 1.0
+
+    for i in range(0, s + 1):
+        weight = one_pm
+        upper = max(m, d, d + m - i)
+
+        for j in range(1, upper + 1):
+            if j <= m:
+                weight *= float(j)
+            if j <= d:
+                weight *= float(d + m - 2 * i)
+            if j <= 2 * s:
+                weight /= 2.0
+            if j <= i:
+                weight /= float(j)
+            if j <= d + m - i:
+                weight /= float(j)
+
+        one_pm = -one_pm
+        beta_sum = s - i
+
+        # Komposition von beta_sum in (m+1) Teile
+        for beta in _compositions(beta_sum, m + 1):
+            if k >= n:
+                raise RuntimeError("Too many GM points generated")
+            # beta[1:] entspricht beta(2:m+1)
+            x[:, k] = (2 * np.array(beta[1:], dtype=float) + 1.0) / float(d + m - 2 * i)
+            w[k] = weight
+            k += 1
+
+    if k != n:
+        raise RuntimeError(f"GM rule size mismatch: got {k}, expected {n}")
+
+    vol = _simplex_unit_volume(m)
+    w *= vol
+    return w, x
+
 
 class IntRuleSimplex4D(IntRule):
     """
@@ -87,6 +182,8 @@ class IntRulePentatope(IntRuleSimplex4D):
     Integration rule for the 4D reference simplex with selectable order.
     Supported orders: 1–5.
     """
+    _cache = {}
+
     def __init__(self, order: int):
         if order <= 1:
             self._init_order_1()
@@ -100,6 +197,15 @@ class IntRulePentatope(IntRuleSimplex4D):
             self._init_order_5()
         else:
             raise NotImplementedError(f"Pentatope rule for order {order} not implemented.")
+        self._cache[order] = (self.nodes.copy(),self.weights.copy(),self.exactness_degree)
+        
+    def _init_from_gm(self, s: int):
+        m = 4
+        w, x = _gm_unit_rule_set(s, m)
+        # Tests erwarten nodes als (N,4)
+        self.nodes = x.T.copy()
+        self.weights = w.copy()
+        self.exactness_degree = 2 * s + 1
 
     def _init_order_1(self):
         self.nodes = np.array([[0.2, 0.2, 0.2, 0.2]])
@@ -107,89 +213,13 @@ class IntRulePentatope(IntRuleSimplex4D):
         self.exactness_degree = 1
 
     def _init_order_2(self):
-        a = 1.0 / 6.0
-        b = 1.0 / 2.0
-        self.nodes = np.array([
-            [a, a, a, a],
-            [b, a, a, a],
-            [a, b, a, a],
-            [a, a, b, a],
-            [a, a, a, b]
-        ])
-        self.weights = np.full(5, 1.0 / 120.0)
-        self.exactness_degree = 2
+        self._init_from_gm(s=1)        
 
     def _init_order_3(self):
-        w1 = 0.030283678097089  # Zentrum
-        w2 = 0.006026785714286  # symmetrische Punkte
-        a = 0.617587190300083
-        b = 0.127470936566639
-
-        center = [0.25, 0.25, 0.25, 0.25]
-        perms = [
-            [a, b, b, b],
-            [b, a, b, b],
-            [b, b, a, b],
-            [b, b, b, a]
-        ]
-
-        self.nodes = np.array([center] + perms)
-        self.weights = np.array([w1] + [w2] * 4)
-        self.exactness_degree = 3
+        self._init_from_gm(s=2)
 
     def _init_order_4(self):
-        # Grundmann-Möller Regel für Grad 4 (6 Punkte)
-        self.nodes = np.array([
-            [0.25, 0.25, 0.25, 0.25],
-            [0.4,  0.2,  0.2,  0.2],
-            [0.2,  0.4,  0.2,  0.2],
-            [0.2,  0.2,  0.4,  0.2],
-            [0.2,  0.2,  0.2,  0.4],
-            [0.1,  0.3,  0.3,  0.3],
-        ])
-        self.weights = np.array([
-            0.02164502164502164,
-            0.01082251082251082,
-            0.01082251082251082,
-            0.01082251082251082,
-            0.01082251082251082,
-            0.0144927536231884
-        ])
-        self.exactness_degree = 4
+        self._init_from_gm(s=3)
 
     def _init_order_5(self):
-        # Symmetrische Regel mit 15 Punkten (Stroud/Grundmann-Möller inspiriert)
-        a = 0.5
-        b = 1.0 / 6.0
-        c = 0.25
-
-        self.nodes = []
-        self.weights = []
-
-        # 5 Punkte mit (b,b,b,b)
-        self.nodes.append([b, b, b, b])
-        self.weights.append(1/120.0)
-
-        # 4 Permutationen von (a,b,b,b)
-        w1 = 0.006853  # Beispielgewicht (angepasst auf Summe = 1/24)
-        for i in range(4):
-            pt = [b, b, b, b]
-            pt[i] = a
-            self.nodes.append(pt)
-            self.weights.append(w1)
-
-        # 6 Permutationen von (c,c,c,d)
-        d = 1.0 - 3*c  # damit Summe = 1
-        w2 = 0.0032  # angepasstes Gewicht
-        from itertools import permutations
-        counted = set()
-        for p in permutations([c, c, c, d]):
-            tup = tuple(p)
-            if tup not in counted:
-                self.nodes.append(p)
-                self.weights.append(w2)
-                counted.add(tup)
-
-        self.nodes = np.array(self.nodes)
-        self.weights = np.array(self.weights)
-        self.exactness_degree = 5
+        self._init_from_gm(s=3)

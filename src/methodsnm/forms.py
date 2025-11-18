@@ -3,6 +3,7 @@ import numpy as np
 from numpy import array
 from methodsnm.trafo import *
 from methodsnm.mesh import *
+from methodsnm.fe_vector import *
 from scipy import sparse
 
 class Form(ABC):
@@ -68,6 +69,132 @@ class BilinearForm(Form):
                     self.matrix[dofi,dofj] += elmat[i,j]
         self.matrix = self.matrix.tocsr()
 
+class LinearVectorForm(Form):
+    """
+    Blockstruktur-Linearform für ProductSpaces.
+    Verwaltet Integratoren nach Komponente (nur b_test).
+    """
+
+    def __init__(self, fes):
+        self.fes = fes
+        self.fes_test = fes
+        nb = len(fes.spaces)
+        self.integrators = [[] for _ in range(nb)]
+        self.vector = None
+
+    def add_block_integrator(self, b_test, integrator):
+        """
+        Registriert einen Integrator für die Blockkomponente b_test.
+        """
+        self.integrators[b_test].append(integrator)
+
+    def assemble(self):
+        """
+        Versammelt globale RHS unter Verwendung der Blockstruktur.
+        """
+
+        ndof = self.fes.ndof
+        self.vector = np.zeros(ndof)
+
+        mesh = self.fes.mesh
+        nb = len(self.fes.spaces)
+
+        # Schleife über Elemente
+        for elnr in range(len(mesh.elements())):
+            trafo = mesh.trafo(elnr)
+
+            fe_block = self.fes.finite_element(elnr)
+            dofs_block = self.fes.element_dofs(elnr)
+
+            # Lokaler RHS-Vektor
+            elloc = np.zeros(fe_block.ndof)
+
+            # Blockweiser Aufbau
+            for b_test in range(nb):
+
+                if not self.integrators[b_test]:
+                    continue
+
+                # Offsets
+                ot = fe_block.block_offsets[b_test]
+                nt = fe_block.block_ndofs[b_test]
+
+                # Das FE der getesteten Komponente
+                fe_test = self.fes.spaces[b_test].finite_element(elnr)
+
+                # Summiere die Integratoren
+                local_block = np.zeros(nt)
+                for integ in self.integrators[b_test]:
+                    local_block += integ.compute_element_vector(fe_test, trafo)
+
+                elloc[ot : ot + nt] += local_block
+
+            # Streuung in globalen RHS-Vektor
+            for i, di in enumerate(dofs_block):
+                self.vector[di] += elloc[i]
+
+
+class BilinearVectorForm(Form):
+    """
+    Blockstruktur-Bilinearform für ProductSpaces.
+    Verwaltet Integratoren blockweise (b_test, b_trial).
+    """
+
+    def __init__(self, fes):
+        self.fes = fes
+        self.fes_test  = fes
+        self.fes_trial = fes
+
+        # Liste blockweiser Integratoren:
+        nb = len(fes.spaces)
+        self.integrators = [[[] for _ in range(nb)] for _ in range(nb)]
+        self.matrix = None
+    
+    def add_block_integrator(self, b_test, b_trial, integrator):
+        """
+        Registriert einen Integrator für den Block (b_test, b_trial).
+        """
+        self.integrators[b_test][b_trial].append(integrator)
+    
+    def assemble(self):
+        """
+        Assemble der globalen Matrix entsprechend der Blockstruktur.
+        """
+
+        ndof = self.fes.ndof
+        self.matrix = sparse.lil_matrix((ndof, ndof))
+        mesh = self.fes.mesh
+        nb = len(self.fes.spaces)
+
+        for elnr in range(len(mesh.elements())):
+            trafo = mesh.trafo(elnr)
+            fe_block = self.fes.finite_element(elnr)
+            dofs_block = self.fes.element_dofs(elnr)
+            elmat = np.zeros((fe_block.ndof, fe_block.ndof))
+
+            for b_test in range(nb):
+                for b_trial in range(nb):
+                    if not self.integrators[b_test][b_trial]:
+                        continue
+
+                    ot = fe_block.block_offsets[b_test]
+                    nt = fe_block.block_ndofs[b_test]
+                    or_ = fe_block.block_offsets[b_trial]
+                    nr = fe_block.block_ndofs[b_trial]
+
+                    fe_test  = self.fes.spaces[b_test].finite_element(elnr)
+                    fe_trial = self.fes.spaces[b_trial].finite_element(elnr)
+                    
+                    block_local = np.zeros((nt, nr))
+                    for integ in self.integrators[b_test][b_trial]:
+                        block_local += integ.compute_element_matrix(fe_test, fe_trial, trafo)
+                    elmat[ot:ot+nt, or_:or_+nr] += block_local
+
+            for i, di in enumerate(dofs_block):
+                for j, dj in enumerate(dofs_block):
+                    self.matrix[di, dj] += elmat[i, j]
+
+        self.matrix = self.matrix.tocsr()
 
 from methodsnm.intrule import select_integration_rule
 from numpy.linalg import det

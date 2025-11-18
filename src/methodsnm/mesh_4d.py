@@ -174,8 +174,93 @@ class UnstructuredHypertriangleMesh(Mesh4D):
         self.special_meshsize = 1/T
         self.initial_bndry_vertices = first
         self.top_bndry_vertices = last
+        self._build_edges()
+        self._build_p2_dofs()
 
     def trafo(self, elnr, codim=0, bndry=False):
         if codim > 0 or bndry:
             raise NotImplementedError("Not implemented yet")
         return HypertriangleTransformation(self, elnr)
+    
+    def _build_edges(self):
+        """
+        Build all unique edges across all 4D simplices.
+        Each simplex has 5 vertices → 10 edges.
+        """
+        edge_set = set()
+
+        for cell in self.hypercells:
+            v0, v1, v2, v3, v4 = cell
+            edges_local = [
+                (v0, v1), (v0, v2), (v0, v3), (v0, v4),
+                (v1, v2), (v1, v3), (v1, v4),
+                (v2, v3), (v2, v4),
+                (v3, v4),
+            ]
+            for e in edges_local:
+                edge_set.add(tuple(sorted(e)))
+
+        self.edges = np.array(sorted(edge_set), dtype=int)
+
+    def _build_p2_dofs(self):
+        """
+        For each hypercell, create the list of local DOFs:
+        5 vertex DOFs + 10 edge DOFs.
+        """
+        nv = len(self.points)  # number of vertex DOFs
+        edge_to_dof = {tuple(e): nv + i for i, e in enumerate(self.edges)}
+        
+        p2_dofs = []
+        for cell in self.hypercells:
+            v0, v1, v2, v3, v4 = cell
+            edgelist = [
+                (v0, v1), (v0, v2), (v0, v3), (v0, v4),
+                (v1, v2), (v1, v3), (v1, v4),
+                (v2, v3), (v2, v4),
+                (v3, v4),
+            ]
+            
+            local = list(cell)
+            local += [edge_to_dof[tuple(sorted(e))] for e in edgelist]
+            p2_dofs.append(local)
+
+        self.p2_dofs = np.array(p2_dofs, dtype=int)
+
+    
+    def find_element(self, ip):
+        def simplex4_volume(pts):
+            """
+            Computes 4D simplex volume = |det([p1-p0, p2-p0, p3-p0, p4-p0])| / 24
+            """
+            a = pts[0]
+            M = np.column_stack([pts[i] - a for i in range(1,5)])
+            return abs(np.linalg.det(M)) / 24.0
+
+
+        def check_point_in_simplex_4d(points, ip, tol=1e-12):
+            """
+            Geometrisch korrekter Test, unabhängig von der Anordnung der Punkte.
+            """
+            # Gesamtvolumen
+            V = simplex4_volume(points)
+            if V < tol:
+                return False
+
+            # Baryzentrische Koordinaten über Ersatz eines Eckpunkts
+            lambdas = []
+            for i in range(5):
+                pts_i = points.copy()
+                pts_i[i] = ip   # ersetze Ecke i durch den Punkt
+                Vi = simplex4_volume(pts_i)
+                lambdas.append(Vi / V)
+
+            lambdas = np.array(lambdas)
+
+            # Prüfe baryzentrische Bedingungen
+            return np.all(lambdas >= -tol) and abs(np.sum(lambdas) - 1) < tol
+        
+        for el in range(len(self.elements())):
+            pts = self.points[self.elements()[el]]  # shape (5,4)
+            if check_point_in_simplex_4d(pts, ip):
+                return el
+        raise Exception("Point outside mesh")

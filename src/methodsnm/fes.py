@@ -45,6 +45,22 @@ class FESpace(ABC):
             return self._bndry_element_dofs(elnr)
         else:
             return self._element_dofs(elnr)
+        
+    def boundary_vertices(self):
+        return set(self.mesh.bndry_vertices)
+
+    def initial_vertices(self):
+        return set(self.mesh.initial_bndry_vertices)
+
+    def top_vertices(self):
+        return set(self.mesh.top_bndry_vertices)
+    
+    def boundary_dofs_excluding_top(self):
+        v = self.boundary_vertices() - self.top_vertices()
+        return sorted(self.boundary_dofs_from_vertex_set(v))
+
+    def boundary_dofs_from_vertex_set(self, vset):
+        return sorted(vset)
 
 class VertexFirstSpace_1D(FESpace):
     def __init__(self, mesh):
@@ -277,3 +293,81 @@ class P1_Hypertriangle_Space(FESpace):
 
     def _element_dofs(self, elnr):
         return self.mesh.elements()[elnr]
+    
+class P2_Hypertriangle_Space(FESpace):
+    """
+    P2 space on 4D simplex mesh.
+    DOFs: 1 per vertex + 1 per edge of each hyper-tetrahedron.
+    """
+
+    def __init__(self, mesh):
+        self.mesh = mesh
+        self._build_edges_from_hypercells()
+        self.nv = len(mesh.points)
+        self.ne = len(self.mesh.edges)
+        self.ndof = self.nv + self.ne
+        self.fe = P2_Hypertriangle_FE()
+
+    def _build_edges_from_hypercells(self):
+        """
+        Build global edge list and hypercells->edges connectivity
+        from hypercells (each with 5 vertices).
+        """
+        # if edges already exist, reuse them
+        if getattr(self.mesh, "edges", None) is not None and \
+           getattr(self.mesh, "hypercells2edges", None) is not None:
+            return
+
+        cells = self.mesh.elements()   # hypercells, shape (ncells, 5)
+        edge_dict = {}                 # (v1,v2) -> edge index
+        cells2edges = []
+
+        for el in cells:
+            verts = list(el)
+            local_edges = []
+            # all pairs of 5 vertices -> 10 edges
+            for a in range(5):
+                for b in range(a+1, 5):
+                    v1, v2 = verts[a], verts[b]
+                    key = (v1, v2) if v1 < v2 else (v2, v1)
+                    if key not in edge_dict:
+                        edge_dict[key] = len(edge_dict)
+                    local_edges.append(edge_dict[key])
+            cells2edges.append(local_edges)
+
+        # store on mesh for reuse
+        self.mesh.edges = np.array(list(edge_dict.keys()), dtype=int)
+        self.mesh.hypercells2edges = np.array(cells2edges, dtype=int)
+
+    def _finite_element(self, elnr):
+        return self.fe
+
+    def _element_dofs(self, elnr):
+        """
+        Local DOF numbering:
+        - first 5: vertex dofs (like P1)
+        - last 10: edge dofs (global index shifted by nv)
+        """
+        verts = self.mesh.elements()[elnr]
+        edge_ids = self.mesh.hypercells2edges[elnr]
+        return np.concatenate([verts, self.nv + edge_ids])
+    
+    def boundary_dofs(self):
+        v = self.boundary_vertices()
+        return sorted(
+            list(v) + self._edge_boundary_dofs(v)
+        )
+    
+    def boundary_dofs_from_vertex_set(self, vset):
+        v = sorted(vset)
+        e = self._edge_boundary_dofs(vset)
+        return sorted(v + e)
+
+    def _edge_boundary_dofs(self, vertex_set):
+        nv = self.nv
+        edge_dofs = []
+        for eid, (v1, v2) in enumerate(self.mesh.edges):
+            if v1 in vertex_set and v2 in vertex_set:
+                edge_dofs.append(nv + eid)
+        return edge_dofs
+
