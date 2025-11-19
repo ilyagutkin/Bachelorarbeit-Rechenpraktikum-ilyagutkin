@@ -137,7 +137,7 @@ class FEFunction(MeshFunction):
         ne = len(mesh.edges)       # number of edge DOFs
 
         if boundary:
-            bset = set(mesh.bndry_vertices)
+            bset = self.fes.boundary_vertices()
 
             for v in mesh.bndry_vertices:
                 x = mesh.points[v]

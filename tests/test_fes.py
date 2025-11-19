@@ -7,6 +7,7 @@ from methodsnm.mesh_2d import *
 from methodsnm.mesh_4d import *
 from netgen.csg import unit_cube
 from ngsolve import Mesh,VOL,specialcf
+from methodsnm.meshfct import FEFunction
 
 @pytest.mark.parametrize("ne", [1,2,10])
 def test_P1_FES_1d(ne):
@@ -130,6 +131,26 @@ def test_P2_Hypertriangle_boundary_dofs(mesh):
         else:
             assert (fes.nv + eid) not in bdofs
 
+def is_on_boundary(x, tol=1e-12):
+    return (
+        abs(x[0]) < tol or abs(x[0]-1) < tol or
+        abs(x[1]) < tol or abs(x[1]-1) < tol or
+        abs(x[2]) < tol or abs(x[2]-1) < tol or
+        abs(x[3]) < tol or abs(x[3]-1) < tol
+    )
+
+def test_boundary_vertices_geometric(mesh):
+    bset = set(mesh.bndry_vertices)
+
+    for vid, x in enumerate(mesh.points):
+        geom = is_on_boundary(x)
+        marked = vid in bset
+
+        if geom:
+            assert marked, f"Vertex {vid} is on geometric boundary, but NOT in mesh.bndry_vertices"
+        else:
+            assert not marked, f"Vertex {vid} is NOT on geometric boundary, but was marked as boundary"
+
 def test_P2_Hypertriangle_boundary_sets_consistent(mesh):
     fes = P2_Hypertriangle_Space(mesh)
 
@@ -155,3 +176,71 @@ def test_P2_Hypertriangle_global_dofs_complete(mesh):
     # Alle DOFs liegen im Bereich
     assert set(range(fes.ndof)) == \
            set(range(fes.nv)) | set(range(fes.nv, fes.nv + fes.ne))
+
+
+def test_P2_setP2_on_nodes(mesh):
+    V = P2_Hypertriangle_Space(mesh)
+    u = FEFunction(V)
+    f = lambda x: 1 + 2*x[0] - 3*x[1] + 5*x[2] - 7*x[3]
+    u._set_P2(f)
+    nv = V.nv
+    for v in range(nv):
+        x = mesh.points[v]
+        assert abs(u.vector[v] - f(x)) < 1e-12
+
+    for eid, (v1, v2) in enumerate(mesh.edges):
+        m = 0.5*(mesh.points[v1] + mesh.points[v2])
+        g = nv + eid
+        assert abs(u.vector[g] - f(m)) < 1e-12
+
+def test_P2_reproduce_quadratic_on_mesh(mesh):
+    V = P2_Hypertriangle_Space(mesh)
+
+    u_ex = lambda x: x[0]**2 + x[1]**2 + x[2]**2 + x[3]**2
+    uh = FEFunction(V)
+    uh._set_P2(u_ex)
+
+    import numpy as np
+    for el in range(5):  
+        trafo = mesh.trafo(el)
+        verts = mesh.points[mesh.elements()[el]]
+
+        for _ in range(5):
+            lamb = np.random.rand(5)
+            lamb /= np.sum(lamb)
+            x = lamb @ verts   
+
+            val_fe  = uh._evaluate(x, trafo)
+            val_ex  = u_ex(x)
+
+            assert abs(val_fe - val_ex) < 1e-10
+
+def test_P2_reference_vs_physical_mapping(mesh):
+    V  = P2_Hypertriangle_Space(mesh)
+    fe = P2_Hypertriangle_FE()
+
+    el = 0
+    trafo = mesh.trafo(el)
+    verts = mesh.points[mesh.elements()[el]]
+    dofs  = V.element_dofs(el)
+
+    uh = FEFunction(V)
+
+    import numpy as np
+    for _ in range(5):
+        lamb = np.random.rand(5)
+        lamb /= np.sum(lamb)
+
+        ref = np.array([lamb[1], lamb[2], lamb[3], lamb[4]])
+        x_phys = lamb @ verts
+
+        phi_ref = fe._evaluate_id(ref)  
+
+        for j, gdof in enumerate(dofs):
+            uh.vector[:] = 0.0
+            uh.vector[gdof] = 1.0
+
+            val_phys = uh._evaluate(x_phys, trafo)
+
+            assert abs(val_phys - phi_ref[j]) < 1e-10, \
+                f"el={el}, local dof={j}, global dof={gdof}"
