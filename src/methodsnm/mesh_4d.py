@@ -109,8 +109,11 @@ class StructuredTesseraktMesh(Mesh4D):
         self.zlength = K
         self.tlength = L
         self.special_meshsize = 1/min(M,N,K,L)
+        self.ne = len(self.hypercells)
+         
 
     def filter_bndry_points(self ,extreme_type, index):
+        """Filter boundary points based on extreme coordinate values."""
         points = self.points[self.bndry_vertices]
     
         if extreme_type == "min":
@@ -146,6 +149,7 @@ class UnstructuredHypertriangleMesh(Mesh4D):
         if ngmesh is None:
             ngmesh = self.generate_3d_mesh()
         super().__init__()
+        self.dimension = 4
         nv = ngmesh.nv
         self.vertices = np.arange((T+1)*nv)
         self.hypercells = np.array([[t*nv+el.vertices[0].nr, t*nv+el.vertices[1].nr, t*nv+el.vertices[2].nr, t*nv+el.vertices[3].nr, (t+1)*nv+el.vertices[3].nr] for el in ngmesh.Elements(VOL) for t in range(T)]
@@ -176,6 +180,7 @@ class UnstructuredHypertriangleMesh(Mesh4D):
         self.top_bndry_vertices = last
         self._build_edges()
         self._build_p2_dofs()
+        self.ne = len(self.hypercells)
 
     def trafo(self, elnr, codim=0, bndry=False):
         if codim > 0 or bndry:

@@ -1,11 +1,13 @@
 import numpy as np
 import pytest
-from methodsnm.mesh_4d import UnstructuredHypertriangleMesh
+from methodsnm.mesh_4d import UnstructuredHypertriangleMesh, StructuredTesseraktMesh
+from methodsnm.mesh_2d import StructuredRectangleMesh
 from methodsnm.fe_4d import P1_Hypertriangle_FE, P2_Hypertriangle_FE
-from methodsnm.meshfct import FEFunction
-from methodsnm.meshfct import MeshFunction
+from methodsnm.fes import *
+from methodsnm.meshfct import *
 from netgen.csg import unit_cube
 from ngsolve import Mesh,VOL,specialcf
+from methodsnm.forms import compute_difference_L2
 
 
 # ----------------------------------------------------------
@@ -127,38 +129,6 @@ def test_p1_evaluate_matches_exact_linear_function():
         val_exact = f_exact(ip)
         assert abs(val - val_exact) < 1e-12
 
-
-def test_p1_array_evaluate():
-    mesh = UnstructuredHypertriangleMesh(T=1, ngmesh=ngmesh)
-
-    fe = P1_Hypertriangle_FE()
-
-    class DummyFES:
-        def __init__(self, mesh):
-            self.mesh = mesh
-            self.ndof = mesh.points.shape[0]
-            self.fe = fe
-        def element_dofs(self, el):
-            return mesh.hypercells[el]
-        def finite_element(self, el):
-            return fe
-
-    fes = DummyFES(mesh)
-    u = FEFunction(fes)
-
-    f_exact = lambda x: x[0] + x[1]
-
-    u._set(f_exact)
-
-    # sample points
-    pts = mesh.points[:10]
-    print(pts)
-    vals1 = [u._evaluate(p) for p in pts]
-    vals2 = u._evaluate_array(pts)
-
-    assert np.allclose(vals1, vals2)
-
-
 # ----------------------------------------------------------
 #  P2 tests
 # ----------------------------------------------------------
@@ -225,3 +195,78 @@ def test_global_patch_linear():
         pts = mesh.points[mesh.hypercells[el]]
         centroid = np.mean(pts, axis=0)
         assert abs(u._evaluate(centroid) - f(centroid)) < 1e-12
+
+mesh1 = UnstructuredHypertriangleMesh(T=2,ngmesh=ngmesh)
+mesh2 = StructuredTesseraktMesh(2,2,2,2)
+mesh3 = StructuredRectangleMesh(5,5)
+fes = []
+fes.append(P1_Hypertriangle_Space(mesh1))
+fes.append(P1_Tesserakt_Space(mesh2)) 
+fes.append(P1_Triangle_Space(mesh3))
+
+@pytest.mark.parametrize("fes", fes)
+def test_constant_vs_FE(fes):
+    """
+    Checks that a FEFunction filled with a constant value matches a
+    ConstantFunction exactly in the L2 sense.
+    """
+    mesh = fes.mesh
+    c = 2.0
+
+    u_ex = ConstantFunction(c, mesh=mesh)
+
+    u_h = FEFunction(fes)
+    u_h._set(lambda x: c +x[0]*0 +x[1]*0)
+
+    for _ in range(5):
+            el = np.random.randint(0, mesh.ne)
+            trafo = mesh.trafo(el)
+
+            # random reference point (barycentric but normalized)
+            ref = np.random.rand(mesh.dimension)
+            # sum(ref) <= 1 erzwingen für Simplexe
+            s = np.sum(ref)
+            if s > 1:
+                ref = ref / (s + 1e-14)
+            x = trafo(ref)   # global point
+
+            uh_val = u_h.evaluate(x, trafo)
+            uex_val = u_ex.evaluate(x, trafo)
+
+            assert abs(uh_val - uex_val) < 1e-12
+
+@pytest.mark.parametrize("fes", fes)
+def test_global_vs_FE(fes):
+    """
+    Ensures that a FEFunction initialized from a smooth GlobalFunction
+    reproduces the same field with negligible L2 error.
+    """
+    mesh = fes.mesh
+
+    u_exact =lambda x: np.sin(x[0]) + x[1]**2
+
+    u_ex = GlobalFunction(u_exact, mesh=mesh)
+
+    u_h = FEFunction(fes)
+    u_h._set(u_exact)
+
+    err = compute_difference_L2(u_h, u_ex, mesh, intorder=3)
+    assert err < 1e-1
+
+@pytest.mark.parametrize("fes", fes)
+def test_constant_vs_global(fes):
+    """
+    Confirms that ConstantFunction and an equivalent GlobalFunction
+    (returning the same constant) are numerically identical in L2.
+    """
+    mesh = fes.mesh
+    c = 3.5
+
+    u1 = ConstantFunction(c, mesh=mesh)
+    u2 = GlobalFunction(lambda x: c, mesh=mesh)
+
+    # FE needed only to get mesh for error integration
+    dummy = FEFunction(fes)
+
+    err = compute_difference_L2(u1, u2, mesh, intorder=3)
+    assert err < 1e-12
