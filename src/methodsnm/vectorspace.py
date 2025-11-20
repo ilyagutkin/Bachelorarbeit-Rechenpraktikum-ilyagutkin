@@ -8,9 +8,11 @@ class Productspace(FESpace):
         self.spaces = spaces
         self.mesh = spaces[0].mesh
         self.ndof = sum(space.ndof for space in spaces)
+        self.ne = sum(space.mesh.ne for space in spaces)
         self.offsets = [0]
         for V in spaces:
-            self.offsets.append(self.offsets[-1] + V.ndof)     
+            self.offsets.append(self.offsets[-1] + V.ndof)    
+             
 
     def component_space(self, i):
         """Return the i-th component space of the product space."""
