@@ -1,18 +1,11 @@
 # Methods for Numerical Mathematics ( Methoden zur Numerischen Mathematik )
-This is the final project work of Ilya Gutkin for the computational lab course.  
-The project focuses on the numerical solution of partial differential equations (PDEs).  
-Its core objective is to solve convection-dominated linearized Navier–Stokes equations on space–time meshes and to verify whether the analytically derived stabilization methods withstand numerical testing.    
-To handle problems where the spatial domain is three-dimensional, one must work with  
-four-dimensional meshes (three spatial dimensions plus time).  
-Since no existing implementation of such a solver was known to the author,  
-this project aims to fill that gap and provide a PDE solver capable of handling fully  
-four-dimensional problems.
+This is the final project work of Ilya Gutkin for the computational lab course. The project focuses on the numerical solution of partial differential equations (PDEs).  Its core objective is to solve convection-dominated linearized Navier–Stokes equations on space–time meshes and to verify whether the analytically derived stabilization methods withstand numerical testing.To handle problems where the spatial domain is three-dimensional, one must work with four-dimensional meshes (three spatial dimensions plus time). Since no existing implementation of such a solver was known to the author, this project aims to fill that gap and provide a PDE solver capable of handling fully four-dimensional problems.
 
 ## Project structure
 
 The repository is organized into several main directories:
 
-- `lectures/`:  
+- [Dokumentation](lectures/):  
   This folder contains all mathematical background material needed to understand the architecture of the code.  
   It is intended as a compact reference for the theoretical foundations used throughout the project.  
   In particular, the document *Introduction to FEM* provides a concise summary of the finite element method and is highly recommended reading for anyone who wants to follow the implementation in detail.
