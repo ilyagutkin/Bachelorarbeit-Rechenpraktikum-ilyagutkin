@@ -6,9 +6,11 @@ This is the final project work of Ilya Gutkin for the computational lab course. 
 The repository is organized into several main directories:
 
 - [lectures](lectures/):  
-  This folder contains all mathematical background material needed to understand the architecture of the code.  
+  This folder contains all mathematical background material needed to understand the architecture of the code. 
   It is intended as a compact reference for the theoretical foundations used throughout the project.  
-  In particular, the document [FEM Introduction](lectures/intro_fem.ipynb/) provides a concise summary of the finite element method and is highly recommended reading for anyone who wants to follow the implementation in detail.
+  For example, the file also contains a detailed description of the 4D [mesh construction](lectures/4d_mesh_construction.ipynb).
+  In particular, the document [FEM Introduction](lectures/intro_fem.ipynb/) provides a concise summary of the finite element method and is highly recommended reading for anyone who wants to follow the implementation in detail.These lectures make no claim to completeness; they are intended only as a broad overview of the mathematical foundations relevant to the project.
+
 
 - [demos](demo/):  
   This folder provides a collection of self-contained demonstration programs.  
@@ -55,7 +57,7 @@ A further goal of the project is the development of a SUPG-like stabilization te
 The analytical derivation of this term has already been completed, and an implementation of the corresponding stabilized formulation will be added in the near future.  
 This extension aims to provide a robust and fully functional stabilized solver for space–time Navier–Stokes problems, complementing the existing framework for time-dependent convection–diffusion and other convection-dominated PDEs.
 
--Finally, the project includes an extensive collection of Pytests that verify the correctness of the individual components.  These tests are intended not only to ensure reliability but also to provide the reader with confidence that every implemented part of the framework behaves as expected. All implemented modules currently pass the full test suite. Additional tests have been prepared for future extensions of the solver.
+- [Finally, the project includes an extensive collection of Pytests that verify the correctness of the individual components.  These tests are intended not only to ensure reliability but also to provide the reader with confidence that every implemented part of the framework behaves as expected. All implemented modules currently pass the full test suite. Additional tests have been prepared for future extensions of the solver.]
 
 The test suite can be executed from the terminal using:
 
@@ -68,17 +70,11 @@ python3 -m pytest -vv
 A complete API documentation has been generated using **pdoc** and is included in the `docs/` directory.  
 It contains detailed descriptions of all modules, classes, and functions that make up the finite element framework.
 
-To access the documentation, simply open:
-
-
-in your browser, or start a small local web server from within the `docs/` folder:
+To access the documentation, simply open this code:
 
 ```bash
-cd docs
-python3 -m http.server
+xdg-open docs/index.html
 ```
-and navigate too http://localhost:8000
-
 
 ### Configuring CI/CD in GWDG gitlab:
 Once you have forked this repository your own GWDG Gitlab project should automatically have CI/CD and gitlab pages deployment, container registry, etc.. active in its project settings so it should be able to run the CI routines for enabling Jupyterlite. 
