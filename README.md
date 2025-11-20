@@ -5,19 +5,19 @@ This is the final project work of Ilya Gutkin for the computational lab course. 
 
 The repository is organized into several main directories:
 
-- [Dokumentation](lectures/):  
+- [lectures](lectures/):  
   This folder contains all mathematical background material needed to understand the architecture of the code.  
   It is intended as a compact reference for the theoretical foundations used throughout the project.  
-  In particular, the document *Introduction to FEM* provides a concise summary of the finite element method and is highly recommended reading for anyone who wants to follow the implementation in detail.
+  In particular, the document (lectures/intro_fem.ipynb) provides a concise summary of the finite element method and is highly recommended reading for anyone who wants to follow the implementation in detail.
 
-- `demo/`:  
+- [demos](demo/):  
   This folder provides a collection of self-contained demonstration programs.  
   Each finite element space has its own dedicated demo, since the details of their implementation differ slightly.  
   The demos are designed to form the conceptual backbone for solving a wide range of PDEs:
   they typically start with a simple Poisson problem but can be freely modified and extended by the reader.  
   A solid understanding of these demos equips the user to set up and solve almost arbitrary PDEs using the library.
 
-- `src/`:  
+- [`src/`](src/methodsnm/):  
   This directory contains the full source code and all core building blocks of the solver, including:
   - a mesh constructor that stores the number of elements, the vertex data, and further geometric properties of the domain,  
   - a finite element space (FES) which takes a mesh as input and encodes the essential global information such as degrees of freedom and function spaces,  
@@ -28,7 +28,7 @@ The repository is organized into several main directories:
   - storing the local basis,  
   - providing all data specific to the reference simplex (for example, the reference triangle or tetrahedron).
 
-  In addition, `src/` contains several helper modules that handle numerical integration, the solution of linear systems, and visualization.  
+  In addition, [src](src/methodsnm/) contains several helper modules that handle numerical integration, the solution of linear systems, and visualization.  
   Their usage is illustrated in the demos and they are intended to be reused directly by the user.
 
 - `mesh function` classes:  
@@ -39,13 +39,13 @@ The repository is organized into several main directories:
 
   In addition, two subdirectories within the `demo/` folder are of particular importance:
 
-- **convection–diffusion/**:  
+- [**convection–diffusion/**:](demos/convection-diffusion/)  
   This directory contains examples of convection-dominated problems.  
   These demos clearly illustrate the limitations of a naive weak formulation and show where standard Galerkin methods begin to fail.  
   They motivate the need for stabilization techniques such as SUPG or other residual-based methods.  
   The examples here serve as a natural introduction to stabilization and provide practical insight into when and why these techniques become indispensable.
 
-- **linearized-navierstokes/**:  
+- [**linearized-navierstokes/**:](linearized_Navier_Stokes)  
   This directory focuses on the linearized Navier–Stokes equations.  
   Similar stabilization issues arise here, especially when using equal-order finite element pairs such as the P1–P1 pairing.  
   The demos demonstrate how stabilized formulations must be incorporated to obtain reliable solutions for incompressible flow problems on space–time meshes.
