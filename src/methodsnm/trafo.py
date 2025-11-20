@@ -10,6 +10,12 @@ class Transformation(ABC):
     eltype = None
 
     def __init__(self, interval):
+        """Abstract base for mappings from reference -> physical element.
+
+        Subclasses provide ``_map`` and ``_jacobian`` for single point
+        evaluation. Public helpers ``map`` and ``jacobian`` accept
+        either a single point or an array of points.
+        """
         pass
 
     @abstractmethod
@@ -53,9 +59,19 @@ class ElementTransformation(Transformation):
     def __init__(self, mesh, elnr):
         self.elnr = elnr
         self.mesh = mesh
+        """Base class for element-local transformations.
+
+        Holds a reference to the parent mesh and the local element
+        index (``elnr``). Concrete element transformations inherit from
+        this class.
+        """
 
 class IntervalTransformation(ElementTransformation):
-    # This class represents a transformation from the interval [0,1] to the given interval.
+    """Affine mapping from reference interval [0,1] to a physical segment.
+
+    Maps xi in [0,1] to x = a + (b-a)*xi where [a,b] are the element
+    endpoints stored in the mesh.
+    """
     def __init__(self, mesh, elnr):
         super().__init__(mesh, elnr)
         self.interval = tuple(mesh.points[mesh.elements()[elnr]])
@@ -76,6 +92,12 @@ class TriangleTransformation(ElementTransformation):
     def calculate_jacobian(self):
         a,b,c = self.points
         return array([b-a,c-a]).T
+
+    """Affine mapping from reference triangle to a physical triangle.
+
+    The transformation is x = a + (b-a)*xi + (c-a)*eta and the
+    Jacobian is constant for affine elements.
+    """
 
     def __init__(self, mesh_or_points, elnr=None):
         if isinstance(mesh_or_points, Mesh):
@@ -107,6 +129,12 @@ class TesseraktTransformation(ElementTransformation):
         K = self.mesh.zlength
         L = self.mesh.tlength
         return np.diag([1/M,1/N,1/K,1/L]).T
+
+    """Reference-to-physical mapping for structured tesseract elements.
+
+    Uses a simple scaling by the grid spacing in each coordinate; the
+    Jacobian is diagonal and constant for the structured tesseract.
+    """
     
     def __init__(self, mesh_or_points, elnr=None):
         if isinstance(mesh_or_points, Mesh):
@@ -140,6 +168,11 @@ class HypertriangleTransformation(ElementTransformation):
         a, b, c, d, e = self.points
         # Jacobi-Matrix: Spaltenvektoren von (b-a), (c-a), (d-a), (e-a)
         return np.column_stack([b - a, c - a, d - a, e - a])  # Shape (4, 4)
+    """Affine mapping from reference 4D simplex to a physical hypertriangle.
+
+    The reference coordinates (eps1..eps4) are mapped affinely using
+    the 5 vertex positions. Jacobian is constant for affine elements.
+    """
     
     def __init__(self, mesh_or_points, elnr=None):
         if isinstance(mesh_or_points, Mesh):
@@ -157,11 +190,11 @@ class HypertriangleTransformation(ElementTransformation):
         self.eltype = "hypertriangle"
 
     def _map(self, ip):
-        """Mappt ip ∈ Referenzsimplex (z. B. baryzentrisch) in echten 4D-Raum"""
+        """Map reference simplex coordinates to physical 4D point."""
         a, b, c, d, e = self.points
         eps1, eps2, eps3, eps4 = ip
         return a + (b - a)*eps1 + (c - a)*eps2 + (d - a)*eps3 + (e - a)*eps4
 
     def _jacobian(self, ip):
-        """Affine Transformation ⇒ Jacobi-Matrix ist konstant"""
+        """Return the (constant) Jacobian matrix for this affine map."""
         return self.jac

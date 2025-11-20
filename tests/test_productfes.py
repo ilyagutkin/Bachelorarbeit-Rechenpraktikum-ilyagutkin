@@ -128,23 +128,12 @@ def test_boundary_dofs_use_get_freedofs(mesh4d):
     # Component-wise boundary DOFs
     B1 = sorted(V1.boundary_vertices())
     B2 = sorted(V2.boundary_vertices())
-
-    # expected: beide Blöcke blockiert → alle anderen DOFs frei
-    blocked = {
-        0: B1,
-        1: B2,
-    }
+    blocked = {0: B1,1: B2,}
 
     free = W.get_freedofs(blocked)
-
-    # Wir bauen die erwartete Maske selbst nach:
     mask = np.ones(W.ndof, dtype=bool)
-
-    # Block 0
     for d in B1:
         mask[d] = False
-
-    # Block 1
     off = W.offsets[1]
     for d in B2:
         mask[off + d] = False

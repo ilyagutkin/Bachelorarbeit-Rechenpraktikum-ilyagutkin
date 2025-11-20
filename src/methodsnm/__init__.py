@@ -16,4 +16,6 @@ import methodsnm.meshfct
 import methodsnm.recpol
 import methodsnm.trafo
 import methodsnm.visualize
+import methodsnm.visualize_4d_function
 import methodsnm.solver
+import methodsnm.vectorspace

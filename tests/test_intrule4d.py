@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Tests for 4D simplex (pentatope) quadrature rules.
 We check polynomial exactness by integrating monomials up to the claimed degree.
@@ -7,7 +6,6 @@ We check polynomial exactness by integrating monomials up to the claimed degree.
 import numpy as np
 import pytest
 import math
-
 from methodsnm.intrule_4d import IntRulePentatope
 
 
@@ -17,8 +15,6 @@ from methodsnm.intrule_4d import IntRulePentatope
 #  Δ4 = { x0, x1, x2, x3 >= 0, x0 + x1 + x2 + x3 <= 1 }
 #
 #  ∫ x0^i x1^j x2^k x3^l dx  =  ( i! j! k! l! ) / ( 4 + i+j+k+l )!
-#
-#  Diese Formel ist Standard und folgt aus der Dirichlet-Verteilung.
 # -------------------------------------------------------------------------
 def monomial_integral_pentatope(i, j, k, l):
     deg = i + j + k + l
@@ -33,7 +29,7 @@ def monomial_integral_pentatope(i, j, k, l):
 
 
 # -------------------------------------------------------------------------
-# Teste für Quadraturordnung 1, 2, 3:
+# Teste für Quadraturordnung 1, 2, 3, 4, 5:
 #  – rule.exactness_degree gibt den garantierten Polynomgrad an.
 #  – Wir testen ALLE Monome mit i+j+k+l ≤ deg.
 #  – Wenn das hält, stimmt die Quadratur definitiv.

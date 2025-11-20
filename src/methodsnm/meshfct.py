@@ -5,10 +5,16 @@ from methodsnm.trafo import *
 from methodsnm.vectorspace import *
 
 class MeshFunction:
+    """Base class for scalar functions defined on a mesh.
+
+    Subclasses implement ``_evaluate(ip, trafo)`` which returns the
+    function value at a single integration point (physical coords).
+    The public ``evaluate`` method supports both single points and
+    arrays of points.
+    """
     mesh = None
     def __init__(self, mesh):
         self.mesh = mesh
-        pass
 
     @abstractmethod
     def _evaluate(self, ip, trafo):
@@ -37,6 +43,7 @@ class ConstantFunction(MeshFunction):
         self.c = c
 
     def _evaluate(self, ip, trafo):
+        """Return the constant value (or array) regardless of ``ip``."""
         return self.c
 
 class GlobalFunction(MeshFunction):
@@ -46,6 +53,7 @@ class GlobalFunction(MeshFunction):
         self.f = function
 
     def _evaluate(self, ip, trafo):
+        """Evaluate a global callable at the physical point trafo(ip)."""
         return self.f(trafo(ip))
 
 class FEFunction(MeshFunction):
@@ -101,6 +109,12 @@ class FEFunction(MeshFunction):
                 local_trafo = trafo
         fe = self.fes.finite_element(local_trafo.elnr)
         dofs = self.fes.element_dofs(local_trafo.elnr)
+        """Evaluate FE function at several physical points inside one element.
+
+        The method expects ``ips`` to be reference or physical points
+        consistent with a single element (``local_trafo``). It returns
+        the vector of function values corresponding to each input point.
+        """
         return np.dot(fe.evaluate(ips), self.vector[dofs])
 
 
@@ -176,8 +190,10 @@ class FEFunction(MeshFunction):
  
 
 class VectorFunction(MeshFunction):
-    """
-    Abstract base class for vector-valued functions defined on a mesh.
+    """Base class for vector-valued mesh functions.
+
+    Subclasses must provide ``_evaluate`` returning a vector-shaped
+    value and set ``value_shape`` for array evaluations.
     """
     def _evaluate(self, ip, trafo):
         raise Exception("Not implemented - Base class for vector functions")
@@ -204,6 +220,7 @@ class ConstantVectorFunction(VectorFunction):
         self.value_shape = self.vec.shape  # wichtig für evaluate_array
 
     def _evaluate(self, ip, trafo):
+        """Return the constant vector value for any input point."""
         return self.vec
 
 class FEVectorFunction(FEFunction):
@@ -231,8 +248,9 @@ class FEVectorFunction(FEFunction):
         return comps
 
     def _evaluate(self, ip, trafo=None):
-        """
-        Gibt einen Vektor zurück: [u1(ip), u2(ip), ..., uk(ip)]
+        """Evaluate each component FE function at a point and return vector.
+
+        Returns an array of component values [u_0(ip), u_1(ip), ...].
         """
         vals = []
         for b, V in enumerate(self.fes.spaces):

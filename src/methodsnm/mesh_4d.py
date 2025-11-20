@@ -7,10 +7,21 @@ from methodsnm.mesh import Mesh
 from methodsnm.trafo import TesseraktTransformation , HypertriangleTransformation
 
 class Mesh4D(Mesh):
+    """Base class for 4D meshes.
+
+    Subclasses should populate connectivity arrays such as
+    ``points``, ``vertices``, ``hypercells`` and boundary lists.
+    """
     def __init__(self):
         self.dimension = 4
 
 class StructuredTesseraktMesh(Mesh4D):
+    """Structured tesseract mesh on a regular (M x N x K x L) grid.
+
+    The constructor builds vertex coordinates, hypercells (4D
+    hypercubes), and lists of edges/faces/volumes. The mapping
+    argument may be used to apply a geometric embedding.
+    """
     def __init__(self, M, N , K, L, mapping = None):
         super().__init__()
 
@@ -113,7 +124,14 @@ class StructuredTesseraktMesh(Mesh4D):
          
 
     def filter_bndry_points(self ,extreme_type, index):
-        """Filter boundary points based on extreme coordinate values."""
+        """Return boundary vertices whose coordinate ``index`` is min/max.
+
+        Parameters
+        ----------
+        extreme_type : {'min','max'}
+        index : int
+            Coordinate index (0..3) to inspect.
+        """
         points = self.points[self.bndry_vertices]
     
         if extreme_type == "min":
@@ -126,19 +144,29 @@ class StructuredTesseraktMesh(Mesh4D):
         return [i for i in self.bndry_vertices if self.points[i][index] == target_value]
 
     def trafo(self, elnr, codim=0, bndry=False):
+        """Return the element transformation for a tesseract element.
+
+        Only full-volume (codim=0) transformations are supported here.
+        """
         if codim > 0 or bndry:
             raise NotImplementedError("Not implemented yet")
         return TesseraktTransformation(self, elnr)
 
 
 class UnstructuredHypertriangleMesh(Mesh4D):
+    """Unstructured 4D mesh built from extruding a 3D NGSolve mesh in time.
+
+    The mesh is constructed by stacking 3D tetrahedral meshes along a
+    temporal axis and connecting corresponding vertices to form 4D
+    simplices.
+    """
     def generate_3d_mesh(maxh=0.2):
-        # Erstelle eine einfache 3D-Geometrie Ω (hier: Einheitswürfel)
+        # Create a simple 3D geometry (unit cube)
         geo = CSGeometry()
         cube = OrthoBrick(*[(0, 0, 0), (1, 1, 1)]).bc("outer")
         geo.Add(cube)
 
-        # Generiere 3D-Mesh
+        # Generate 3D mesh
         ngmesh = geo.GenerateMesh(maxh=maxh)
         type(ngmesh)
         ngmesh.Curve(1)  # order = 1 (linear)
@@ -146,6 +174,15 @@ class UnstructuredHypertriangleMesh(Mesh4D):
         return NGSMeshMesh(ngmesh)
 
     def __init__(self, T, ngmesh=None ):
+        """Build an unstructured 4D hypertriangle mesh by temporal extrusion.
+
+        Parameters
+        ----------
+        T : int
+            Number of time intervals (levels) to extrude the 3D mesh.
+        ngmesh : optional
+            Precomputed 3D NGSolve mesh; if None a unit-cube mesh is created.
+        """
         if ngmesh is None:
             ngmesh = self.generate_3d_mesh()
         super().__init__()
@@ -183,6 +220,10 @@ class UnstructuredHypertriangleMesh(Mesh4D):
         self.ne = len(self.hypercells)
 
     def trafo(self, elnr, codim=0, bndry=False):
+        """Return the hypertriangle transformation for a simplex element.
+
+        Only full-volume (codim=0) transformations are supported.
+        """
         if codim > 0 or bndry:
             raise NotImplementedError("Not implemented yet")
         return HypertriangleTransformation(self, elnr)
@@ -192,6 +233,7 @@ class UnstructuredHypertriangleMesh(Mesh4D):
         Build all unique edges across all 4D simplices.
         Each simplex has 5 vertices → 10 edges.
         """
+        # concise docstring above; implementation unchanged
         edge_set = set()
 
         for cell in self.hypercells:
@@ -212,6 +254,7 @@ class UnstructuredHypertriangleMesh(Mesh4D):
         For each hypercell, create the list of local DOFs:
         5 vertex DOFs + 10 edge DOFs.
         """
+        # concise docstring above; implementation unchanged
         nv = len(self.points)  # number of vertex DOFs
         edge_to_dof = {tuple(e): nv + i for i, e in enumerate(self.edges)}
         
@@ -243,8 +286,10 @@ class UnstructuredHypertriangleMesh(Mesh4D):
 
 
         def check_point_in_simplex_4d(points, ip, tol=1e-12):
-            """
-            Geometrisch korrekter Test, unabhängig von der Anordnung der Punkte.
+            """Check whether point ip lies inside the 4D simplex given by points.
+
+            Uses a barycentric-volume test (replace each vertex by the
+            point and compare sub-simplex volumes to the whole volume).
             """
             # Gesamtvolumen
             V = simplex4_volume(points)
